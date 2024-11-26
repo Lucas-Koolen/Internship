@@ -9,13 +9,52 @@
         body {
             margin: 0;
             overflow: hidden;
+            background: linear-gradient(135deg, #1a1a1a, #333333); /* Mooie donkere gradient */
+            font-family: Arial, sans-serif;
         }
         canvas {
             display: block;
         }
+        #copyright {
+            position: fixed;
+            bottom: 10px;
+            right: 10px;
+            z-index: 10;
+            opacity: 0.7;
+        }
+        #copyright img {
+            width: 100px;
+        }
+        #loader {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: white;
+            font-size: 1.5em;
+            font-weight: bold;
+            animation: fadeIn 2s ease-in-out infinite alternate;
+        }
+        @keyframes fadeIn {
+            from {
+                opacity: 0.5;
+            }
+            to {
+                opacity: 1;
+            }
+        }
     </style>
 </head>
 <body>
+    <!-- Copyright Logo -->
+    <div id="copyright">
+        <img src="fev-logo.png" alt="FEV Logo">
+    </div>
+
+    <!-- Loader -->
+    <div id="loader">Model wordt geladen...</div>
+
+    <!-- Scripts voor Three.js en OrbitControls -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
@@ -27,15 +66,15 @@
             // Basis Three.js setup
             const scene = new THREE.Scene();
             const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-            const renderer = new THREE.WebGLRenderer();
+            const renderer = new THREE.WebGLRenderer({ antialias: true });
             renderer.setSize(window.innerWidth, window.innerHeight);
-            renderer.setClearColor(0x444444); // Grijze achtergrond
+            renderer.setClearColor(0x1a1a1a); // Donkere achtergrond
             document.body.appendChild(renderer.domElement);
 
-            console.log("Renderer, scene en camera succesvol ingesteld. Achtergrond ingesteld op grijs (0x444444).");
+            console.log("Renderer, scene en camera succesvol ingesteld. Achtergrond ingesteld op donker.");
 
             // Licht toevoegen
-            const ambientLight = new THREE.AmbientLight(0x404040, 2); // Zacht licht
+            const ambientLight = new THREE.AmbientLight(0xffffff, 1.5); // Helder wit licht
             scene.add(ambientLight);
 
             const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
@@ -52,31 +91,30 @@
                     const model = gltf.scene;
                     console.log("GLTF-bestand succesvol geladen:", gltf);
 
-                    // Forcer materiaal (rood) en pas schaal aan
+                    // Materiaal en animatie toepassen
                     model.traverse((node) => {
                         if (node.isMesh) {
-                            node.material = new THREE.MeshStandardMaterial({ color: 0xff0000 }); // Fel rood
+                            node.material = new THREE.MeshStandardMaterial({ color: 0xff6347 }); // Tomaat-rood
                         }
                     });
                     console.log("Rood standaardmateriaal toegepast op alle meshes.");
 
                     model.scale.set(1, 1, 1);
                     model.position.set(0, 0, 0);
+
+                    // Rotatie-animatie
+                    function rotateModel() {
+                        model.rotation.y += 0.01; // Langzame rotatie
+                    }
+
                     scene.add(model);
 
-                    // Dynamische camera aanpassing
-                    const box = new THREE.Box3().setFromObject(model);
-                    const size = new THREE.Vector3();
-                    box.getSize(size);
-                    const maxDim = Math.max(size.x, size.y, size.z);
-                    const fov = camera.fov * (Math.PI / 180);
-                    let cameraZ = Math.abs(maxDim / Math.sin(fov / 2)); // Bereken de beste z-positie
+                    // Verwijder de loader
+                    document.getElementById("loader").style.display = "none";
 
-                    cameraZ *= 1.5; // Extra marge om verder weg te staan
-                    camera.position.set(0, maxDim / 2, cameraZ);
-                    camera.lookAt(box.getCenter(new THREE.Vector3()));
-
-                    console.log(`Camera gepositioneerd op: ${camera.position.x}, ${camera.position.y}, ${camera.position.z}`);
+                    // Animatie toevoegen
+                    animateFunctions.push(rotateModel);
+                    console.log("Model toegevoegd aan de scene met animatie.");
                 },
                 function (xhr) {
                     if (xhr.total) {
@@ -97,6 +135,10 @@
 
             console.log("OrbitControls ingesteld voor interactieve navigatie.");
 
+            // Camera positie
+            camera.position.set(0, 2, 10);
+            camera.lookAt(0, 0, 0);
+
             // Resizen
             window.addEventListener('resize', () => {
                 console.log("Venstergrootte gewijzigd. Renderer en camera bijgewerkt.");
@@ -105,10 +147,12 @@
                 renderer.setSize(window.innerWidth, window.innerHeight);
             });
 
-            // Animatielus
+            // Animaties
+            const animateFunctions = [];
             function animate() {
                 requestAnimationFrame(animate);
                 controls.update();
+                animateFunctions.forEach((fn) => fn());
                 renderer.render(scene, camera);
             }
             animate();
