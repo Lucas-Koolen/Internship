@@ -9,7 +9,7 @@
         body {
             margin: 0;
             overflow: hidden;
-            background: radial-gradient(circle, #ffffff, #e9ecef);
+            background: radial-gradient(circle, #f8f9fa, #e9ecef);
             font-family: Arial, sans-serif;
         }
         canvas {
@@ -83,47 +83,42 @@
             const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
             const renderer = new THREE.WebGLRenderer({ antialias: true });
             renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setClearColor(0xf8f9fa);
             renderer.shadowMap.enabled = true;
             renderer.shadowMap.type = THREE.PCFSoftShadowMap;
             document.body.appendChild(renderer.domElement);
 
             console.log("Renderer, scene en camera succesvol ingesteld.");
 
-            // Licht instellen
-            const ambientLight = new THREE.AmbientLight(0xffffff, 0.8); // Zacht wit licht
+            // Licht toevoegen
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.6); // Zacht omgevingslicht
             scene.add(ambientLight);
 
-            const directionalLight = new THREE.DirectionalLight(0xffffff, 1.2);
-            directionalLight.position.set(10, 20, 10);
+            const directionalLight = new THREE.DirectionalLight(0xffffff, 1.5);
+            directionalLight.position.set(10, 15, 10);
             directionalLight.castShadow = true;
-            directionalLight.shadow.mapSize.width = 4096;
-            directionalLight.shadow.mapSize.height = 4096;
-            directionalLight.shadow.camera.near = 0.1;
-            directionalLight.shadow.camera.far = 100;
             scene.add(directionalLight);
 
-            console.log("Licht ingesteld.");
-
-            // Reflecterende ondergrond
+            // Ondergrond
             const groundGeometry = new THREE.CircleGeometry(100, 128);
             const groundMaterial = new THREE.MeshStandardMaterial({
-                color: 0xf0f0f0,
-                roughness: 0.3,
-                metalness: 0.0,
+                color: 0xffffff,
+                roughness: 0.1,
+                metalness: 0.5,
             });
             const ground = new THREE.Mesh(groundGeometry, groundMaterial);
             ground.rotation.x = -Math.PI / 2;
             ground.receiveShadow = true;
             scene.add(ground);
 
-            console.log("Reflecterende vloer toegevoegd.");
+            console.log("Ronde ondergrond toegevoegd.");
 
             // Variabelen
             let model = null;
             let rotationEnabled = true;
             const loader = new THREE.GLTFLoader();
             const ROTATION_SPEED = (2 * Math.PI) / 40;
-            const INITIAL_CAMERA_POSITION = { x: 0, y: 10, z: 30 };
+            const INITIAL_CAMERA_POSITION = { x: 0, y: 5, z: 20 };
 
             // OrbitControls
             const controls = new THREE.OrbitControls(camera, renderer.domElement);
@@ -145,22 +140,16 @@
 
                     const box = new THREE.Box3().setFromObject(model);
                     const size = box.getSize(new THREE.Vector3());
-                    model.position.set(0, size.y / 2 + 0.5, 0); // Model zweeft 0.5 boven de vloer
+                    model.position.set(0, size.y / 2, 0);
 
                     model.traverse((node) => {
                         if (node.isMesh) {
-                            node.material = new THREE.MeshPhysicalMaterial({
-                                color: 0x888888,
-                                metalness: 1.0,
-                                roughness: 0.1,
-                                reflectivity: 1.0,
-                            });
                             node.castShadow = true;
                         }
                     });
 
                     scene.add(model);
-                    console.log("Model geladen en chroommateriaal toegepast.");
+                    console.log("Model geladen.");
                 },
                 undefined,
                 function (error) {
@@ -182,9 +171,9 @@
                 rotationButton.innerText = rotationEnabled ? "Rotation On" : "Rotation Off";
             });
 
-            // Camera-reset met animatie
+            // Camera- en controls-reset met animatie
             function animateCameraAndControls(camera, controls, targetPosition) {
-                const duration = 1.5; // Duur van animatie
+                const duration = 1.5; // Animatieduur in seconden
                 const startPosition = { ...camera.position };
                 const startTime = performance.now();
 
@@ -197,7 +186,7 @@
                     camera.position.z = THREE.MathUtils.lerp(startPosition.z, targetPosition.z, t);
 
                     camera.lookAt(0, 0, 0);
-                    controls.target.set(0, 0, 0);
+                    controls.target.set(0, 0, 0); // Reset OrbitControls target
                     controls.update();
 
                     if (t < 1) {
@@ -207,6 +196,7 @@
                 requestAnimationFrame(update);
             }
 
+            // Animatie
             function animate() {
                 requestAnimationFrame(animate);
                 controls.update();
