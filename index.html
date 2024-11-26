@@ -15,6 +15,7 @@
     </style>
 </head>
 <body>
+    <!-- Three.js en OrbitControls laden -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
@@ -38,13 +39,13 @@
         // GLTF Loader
         const loader = new THREE.GLTFLoader();
         loader.load(
-            'testcube.gltf', // Naam van je bestand
+            'testcube.gltf', // Pad naar het GLTF-bestand (staat in de root van de repo)
             function (gltf) {
                 const model = gltf.scene;
                 scene.add(model);
             },
             function (xhr) {
-                console.log((xhr.loaded / xhr.total) * 100 + '% geladen');
+                console.log((xhr.loaded / xhr.total * 100).toFixed(2) + '% geladen');
             },
             function (error) {
                 console.error('Een fout is opgetreden bij het laden van het GLTF-bestand:', error);
