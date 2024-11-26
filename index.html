@@ -78,24 +78,30 @@
             console.log("Renderer, scene en camera succesvol ingesteld.");
 
             // Licht toevoegen
-            const ambientLight = new THREE.AmbientLight(0xffffff, 1.5); // Helder licht
+            const ambientLight = new THREE.AmbientLight(0xffffff, 1); // Helder omgevingslicht
             scene.add(ambientLight);
 
-            const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
-            directionalLight.position.set(5, 10, 5);
-            directionalLight.castShadow = true; // Schaduw laten werpen
-            directionalLight.shadow.mapSize.width = 1024; // Scherpe schaduwen
-            directionalLight.shadow.mapSize.height = 1024;
+            const directionalLight = new THREE.DirectionalLight(0xffffff, 1.5);
+            directionalLight.position.set(10, 20, 10); // Lichtbron boven en schuin gericht
+            directionalLight.castShadow = true; // Schaduw inschakelen
+            directionalLight.shadow.mapSize.width = 2048; // Hoge kwaliteit schaduwen
+            directionalLight.shadow.mapSize.height = 2048;
+            directionalLight.shadow.camera.near = 0.5;
+            directionalLight.shadow.camera.far = 50;
             scene.add(directionalLight);
 
             console.log("Licht toegevoegd aan de scene.");
+
+            // Schaduwvisualisatie (optioneel voor debuggen)
+            // const helper = new THREE.CameraHelper(directionalLight.shadow.camera);
+            // scene.add(helper);
 
             // Ondergrond
             const groundGeometry = new THREE.PlaneGeometry(50, 50);
             const groundMaterial = new THREE.MeshStandardMaterial({ color: 0x666666 });
             const ground = new THREE.Mesh(groundGeometry, groundMaterial);
             ground.rotation.x = -Math.PI / 2; // Plat leggen
-            ground.receiveShadow = true;
+            ground.receiveShadow = true; // Ontvangt schaduw
             scene.add(ground);
 
             console.log("Ondergrond toegevoegd.");
@@ -126,15 +132,15 @@
                 function (gltf) {
                     model = gltf.scene;
 
-                    // Origin aanpassen
+                    // Origin aanpassen (center onder het model)
                     const box = new THREE.Box3().setFromObject(model);
                     const center = box.getCenter(new THREE.Vector3());
-                    model.position.sub(center); // Breng origin naar het midden
-                    model.position.y += box.min.y * -1; // Til het model omhoog zodat de ondergrond eronder is
+                    const size = box.getSize(new THREE.Vector3());
+                    model.position.set(0, size.y / 2, 0); // Til het model omhoog
 
                     model.traverse((node) => {
                         if (node.isMesh) {
-                            node.material = new THREE.MeshStandardMaterial({ color: 0xff6347 });
+                            node.material = new THREE.MeshStandardMaterial({ color: 0xffc107 }); // Goudkleurig materiaal
                             node.castShadow = true; // Schaduw laten werpen
                         }
                     });
