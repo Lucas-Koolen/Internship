@@ -49,9 +49,15 @@
             loader.load(
                 'testcube.gltf', // Pad naar het GLTF-bestand
                 function (gltf) {
+                    console.log("GLTF-bestand succesvol geladen:", gltf);
+
                     const model = gltf.scene;
-                    scene.add(model);
-                    console.log("GLTF-bestand succesvol geladen en toegevoegd aan de scene.");
+                    if (model) {
+                        scene.add(model);
+                        console.log("Model toegevoegd aan de scene.");
+                    } else {
+                        console.error("Model ontbreekt in het GLTF-bestand!");
+                    }
                 },
                 function (xhr) {
                     if (xhr.total) {
