@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>3D Object Viewer</title>
-    <link rel="icon" href="data:," /> <!-- Voorkomt favicon-fout -->
+    <link rel="icon" href="data:," />
     <style>
         body {
             margin: 0;
@@ -16,7 +16,6 @@
     </style>
 </head>
 <body>
-    <!-- Laden van Three.js, OrbitControls en GLTFLoader -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
@@ -30,9 +29,10 @@
             const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
             const renderer = new THREE.WebGLRenderer();
             renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setClearColor(0x444444); // Grijze achtergrond
             document.body.appendChild(renderer.domElement);
 
-            console.log("Renderer, scene en camera succesvol ingesteld.");
+            console.log("Renderer, scene en camera succesvol ingesteld. Achtergrond ingesteld op grijs (0x444444).");
 
             // Licht toevoegen
             const ambientLight = new THREE.AmbientLight(0x404040, 2); // Zacht licht
@@ -47,17 +47,24 @@
             // GLTF Loader
             const loader = new THREE.GLTFLoader();
             loader.load(
-                'testcube.gltf', // Pad naar het GLTF-bestand
+                'testcube.gltf',
                 function (gltf) {
+                    const model = gltf.scene;
                     console.log("GLTF-bestand succesvol geladen:", gltf);
 
-                    const model = gltf.scene;
-                    if (model) {
-                        scene.add(model);
-                        console.log("Model toegevoegd aan de scene.");
-                    } else {
-                        console.error("Model ontbreekt in het GLTF-bestand!");
-                    }
+                    // Forcer materiaal (rood) en pas schaal aan
+                    model.traverse((node) => {
+                        if (node.isMesh) {
+                            node.material = new THREE.MeshStandardMaterial({ color: 0xff0000 }); // Fel rood
+                        }
+                    });
+                    console.log("Rood standaardmateriaal toegepast op alle meshes.");
+
+                    model.scale.set(1, 1, 1);
+                    model.position.set(0, 0, 0);
+                    scene.add(model);
+
+                    console.log("Model toegevoegd aan de scene met schaal 1,1,1 en positie 0,0,0.");
                 },
                 function (xhr) {
                     if (xhr.total) {
@@ -73,13 +80,14 @@
 
             // OrbitControls voor interactie
             const controls = new THREE.OrbitControls(camera, renderer.domElement);
-            controls.enableDamping = true; // Smooth beweging
+            controls.enableDamping = true;
             controls.dampingFactor = 0.25;
 
             console.log("OrbitControls ingesteld voor interactieve navigatie.");
 
             // Camera positie
             camera.position.set(0, 2, 5);
+            camera.lookAt(0, 0, 0);
 
             // Resizen
             window.addEventListener('resize', () => {
@@ -92,7 +100,7 @@
             // Animatielus
             function animate() {
                 requestAnimationFrame(animate);
-                controls.update(); // Updates van de interactie
+                controls.update();
                 renderer.render(scene, camera);
             }
             animate();
