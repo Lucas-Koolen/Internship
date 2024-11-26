@@ -92,10 +92,6 @@
 
             console.log("Licht toegevoegd aan de scene.");
 
-            // Schaduwvisualisatie (optioneel voor debuggen)
-            // const helper = new THREE.CameraHelper(directionalLight.shadow.camera);
-            // scene.add(helper);
-
             // Ondergrond
             const groundGeometry = new THREE.PlaneGeometry(50, 50);
             const groundMaterial = new THREE.MeshStandardMaterial({ color: 0x666666 });
@@ -132,11 +128,11 @@
                 function (gltf) {
                     model = gltf.scene;
 
-                    // Origin aanpassen (center onder het model)
+                    // Origin aanpassen (onderkant van het model)
                     const box = new THREE.Box3().setFromObject(model);
                     const center = box.getCenter(new THREE.Vector3());
                     const size = box.getSize(new THREE.Vector3());
-                    model.position.set(0, size.y / 2, 0); // Til het model omhoog
+                    model.position.set(0, size.y / 2 - box.min.y, 0); // Correcte offset
 
                     model.traverse((node) => {
                         if (node.isMesh) {
