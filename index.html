@@ -85,7 +85,7 @@
             const loader = new THREE.GLTFLoader();
             let isInteracting = false; // Om te tracken of OrbitControls wordt gebruikt
             let lastInteractionTime = 0; // Tijdstip van laatste interactie
-            const ROTATION_SPEED = (2 * Math.PI) / 20; // Langzame rotatie (1 rotatie per 20 sec)
+            const ROTATION_SPEED = (2 * Math.PI) / 60; // Langzame rotatie (1 rotatie per 60 sec)
 
             loader.load(
                 'testcube.gltf',
