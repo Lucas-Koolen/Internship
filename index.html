@@ -9,7 +9,7 @@
         body {
             margin: 0;
             overflow: hidden;
-            background: linear-gradient(135deg, #1a1a1a, #333333); /* Mooie donkere gradient */
+            background: linear-gradient(135deg, #1a1a1a, #333333);
             font-family: Arial, sans-serif;
         }
         canvas {
@@ -63,18 +63,16 @@
         console.log("Script gestart: Initialisatie...");
 
         try {
-            // Basis Three.js setup
             const scene = new THREE.Scene();
             const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
             const renderer = new THREE.WebGLRenderer({ antialias: true });
             renderer.setSize(window.innerWidth, window.innerHeight);
-            renderer.setClearColor(0x1a1a1a); // Donkere achtergrond
+            renderer.setClearColor(0x1a1a1a);
             document.body.appendChild(renderer.domElement);
 
-            console.log("Renderer, scene en camera succesvol ingesteld. Achtergrond ingesteld op donker.");
+            console.log("Renderer, scene en camera succesvol ingesteld.");
 
-            // Licht toevoegen
-            const ambientLight = new THREE.AmbientLight(0xffffff, 1.5); // Helder wit licht
+            const ambientLight = new THREE.AmbientLight(0xffffff, 1.5);
             scene.add(ambientLight);
 
             const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
@@ -83,38 +81,29 @@
 
             console.log("Licht toegevoegd aan de scene.");
 
-            // GLTF Loader
+            let model = null;
             const loader = new THREE.GLTFLoader();
+            let isInteracting = false; // Om te tracken of OrbitControls wordt gebruikt
+            let lastInteractionTime = 0; // Tijdstip van laatste interactie
+            const ROTATION_SPEED = (2 * Math.PI) / 20; // Langzame rotatie (1 rotatie per 20 sec)
+
             loader.load(
                 'testcube.gltf',
                 function (gltf) {
-                    const model = gltf.scene;
-                    console.log("GLTF-bestand succesvol geladen:", gltf);
-
-                    // Materiaal en animatie toepassen
+                    model = gltf.scene;
                     model.traverse((node) => {
                         if (node.isMesh) {
-                            node.material = new THREE.MeshStandardMaterial({ color: 0xff6347 }); // Tomaat-rood
+                            node.material = new THREE.MeshStandardMaterial({ color: 0xff6347 });
                         }
                     });
                     console.log("Rood standaardmateriaal toegepast op alle meshes.");
 
                     model.scale.set(1, 1, 1);
                     model.position.set(0, 0, 0);
-
-                    // Rotatie-animatie
-                    function rotateModel() {
-                        model.rotation.y += 0.01; // Langzame rotatie
-                    }
-
                     scene.add(model);
 
-                    // Verwijder de loader
                     document.getElementById("loader").style.display = "none";
-
-                    // Animatie toevoegen
-                    animateFunctions.push(rotateModel);
-                    console.log("Model toegevoegd aan de scene met animatie.");
+                    console.log("Model toegevoegd aan de scene.");
                 },
                 function (xhr) {
                     if (xhr.total) {
@@ -128,18 +117,15 @@
                 }
             );
 
-            // OrbitControls voor interactie
             const controls = new THREE.OrbitControls(camera, renderer.domElement);
             controls.enableDamping = true;
             controls.dampingFactor = 0.25;
 
-            console.log("OrbitControls ingesteld voor interactieve navigatie.");
+            console.log("OrbitControls ingesteld.");
 
-            // Camera positie
             camera.position.set(0, 2, 10);
             camera.lookAt(0, 0, 0);
 
-            // Resizen
             window.addEventListener('resize', () => {
                 console.log("Venstergrootte gewijzigd. Renderer en camera bijgewerkt.");
                 camera.aspect = window.innerWidth / window.innerHeight;
@@ -147,12 +133,28 @@
                 renderer.setSize(window.innerWidth, window.innerHeight);
             });
 
-            // Animaties
-            const animateFunctions = [];
+            // Luisteren naar OrbitControls interacties
+            controls.addEventListener('start', () => {
+                isInteracting = true;
+                lastInteractionTime = Date.now();
+            });
+
+            controls.addEventListener('end', () => {
+                lastInteractionTime = Date.now(); // Sla de tijd van interactie op
+            });
+
             function animate() {
                 requestAnimationFrame(animate);
                 controls.update();
-                animateFunctions.forEach((fn) => fn());
+
+                // Langzame rotatie alleen als er geen interactie is
+                if (!isInteracting && model) {
+                    const now = Date.now();
+                    if (now - lastInteractionTime > 5000) { // 5 seconden wachttijd
+                        model.rotation.y += ROTATION_SPEED / 60; // 60 FPS
+                    }
+                }
+
                 renderer.render(scene, camera);
             }
             animate();
