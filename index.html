@@ -136,7 +136,6 @@
 
                     model.traverse((node) => {
                         if (node.isMesh) {
-                            node.material = new THREE.MeshStandardMaterial({ color: 0xffc107 }); // Goudkleurig materiaal
                             node.castShadow = true; // Schaduw laten werpen
                         }
                     });
