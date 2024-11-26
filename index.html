@@ -9,7 +9,7 @@
         body {
             margin: 0;
             overflow: hidden;
-            background: radial-gradient(circle, #202020, #101010);
+            background: linear-gradient(to bottom, #f8f9fa, #e9ecef);
             font-family: Arial, sans-serif;
         }
         canvas {
@@ -25,38 +25,40 @@
             gap: 10px;
         }
         #ui button {
-            padding: 10px 20px;
-            font-size: 14px;
-            border-radius: 5px;
+            padding: 12px 25px;
+            font-size: 16px;
+            border-radius: 8px;
             cursor: pointer;
-            border: 2px solid #ff0000;
+            border: none;
             transition: all 0.3s ease;
             font-weight: bold;
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.2);
         }
         #reset-button {
-            background-color: #ff0000;
+            background-color: #007bff;
             color: white;
         }
         #reset-button:hover {
-            background-color: #cc0000;
+            background-color: #0056b3;
         }
         #rotation-button.on {
-            background-color: #ff0000;
+            background-color: #007bff;
             color: white;
         }
         #rotation-button.off {
             background-color: transparent;
-            color: #ff0000;
+            color: #007bff;
+            border: 2px solid #007bff;
         }
         #rotation-button:hover {
-            box-shadow: 0 4px 8px rgba(255, 0, 0, 0.5);
+            box-shadow: 0 4px 8px rgba(0, 123, 255, 0.5);
         }
         #copyright {
             position: fixed;
             bottom: 10px;
             right: 10px;
             z-index: 10;
-            opacity: 0.8;
+            opacity: 0.9;
         }
         #copyright img {
             width: 100px;
@@ -89,47 +91,51 @@
             const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
             const renderer = new THREE.WebGLRenderer({ antialias: true });
             renderer.setSize(window.innerWidth, window.innerHeight);
-            renderer.setClearColor(0x101010);
-            renderer.shadowMap.enabled = true; // Schaduw inschakelen
-            renderer.shadowMap.type = THREE.PCFSoftShadowMap; // Zachte schaduwen
+            renderer.setClearColor(0xf8f9fa);
+            renderer.shadowMap.enabled = true;
+            renderer.shadowMap.type = THREE.PCFSoftShadowMap;
             document.body.appendChild(renderer.domElement);
 
             console.log("Renderer, scene en camera succesvol ingesteld.");
 
             // Licht toevoegen
-            const ambientLight = new THREE.AmbientLight(0xffffff, 0.4); // Zacht omgevingslicht
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.8); // Zacht omgevingslicht
             scene.add(ambientLight);
 
-            const spotLight = new THREE.SpotLight(0xff0000, 1.5);
+            const spotLight = new THREE.SpotLight(0xffffff, 1.2);
             spotLight.position.set(10, 20, 10);
-            spotLight.castShadow = true; // Schaduw inschakelen
-            spotLight.shadow.mapSize.width = 4096;
-            spotLight.shadow.mapSize.height = 4096;
+            spotLight.castShadow = true;
+            spotLight.shadow.mapSize.width = 2048;
+            spotLight.shadow.mapSize.height = 2048;
             spotLight.shadow.camera.near = 0.5;
             spotLight.shadow.camera.far = 100;
             scene.add(spotLight);
 
+            const fillLight = new THREE.PointLight(0xffffff, 0.5); // Extra licht om donkere gebieden te vullen
+            fillLight.position.set(-10, 15, -10);
+            scene.add(fillLight);
+
             console.log("Licht toegevoegd aan de scene.");
 
-            // Ondergrond met verloop
+            // Reflecterende vloer
             const groundGeometry = new THREE.PlaneGeometry(100, 100);
             const groundMaterial = new THREE.MeshStandardMaterial({
-                color: 0x2a2a2a,
-                roughness: 0.8,
-                metalness: 0.2,
+                color: 0xffffff,
+                roughness: 0.1,
+                metalness: 0.6,
             });
             const ground = new THREE.Mesh(groundGeometry, groundMaterial);
-            ground.rotation.x = -Math.PI / 2; // Plat leggen
-            ground.receiveShadow = true; // Ontvangt schaduw
+            ground.rotation.x = -Math.PI / 2;
+            ground.receiveShadow = true;
             scene.add(ground);
 
-            console.log("Ondergrond toegevoegd met zachte randen.");
+            console.log("Reflecterende vloer toegevoegd.");
 
             // Variabelen
             let model = null;
-            let rotationEnabled = true; // Voor rotatie aan/uit
+            let rotationEnabled = true;
             const loader = new THREE.GLTFLoader();
-            const ROTATION_SPEED = (2 * Math.PI) / 40; // Langzame rotatie (1 rotatie per 40 sec)
+            const ROTATION_SPEED = (2 * Math.PI) / 40;
             const INITIAL_CAMERA_POSITION = { x: 0, y: 5, z: 20 };
 
             // OrbitControls
@@ -137,12 +143,10 @@
             controls.enableDamping = true;
             controls.dampingFactor = 0.25;
 
-            // Beperk de camera
-            controls.maxPolarAngle = Math.PI / 2.1; // Voorkom dat de camera onder de grond gaat
+            controls.maxPolarAngle = Math.PI / 2.1;
 
-            console.log("OrbitControls ingesteld en camera beperkt.");
+            console.log("OrbitControls ingesteld.");
 
-            // Startpositie van de camera
             camera.position.set(INITIAL_CAMERA_POSITION.x, INITIAL_CAMERA_POSITION.y, INITIAL_CAMERA_POSITION.z);
             camera.lookAt(0, 0, 0);
 
@@ -152,15 +156,14 @@
                 function (gltf) {
                     model = gltf.scene;
 
-                    // Origin aanpassen (onderkant van het model)
                     const box = new THREE.Box3().setFromObject(model);
                     const center = box.getCenter(new THREE.Vector3());
                     const size = box.getSize(new THREE.Vector3());
-                    model.position.set(0, size.y / 2 - box.min.y, 0); // Correcte offset
+                    model.position.set(0, size.y / 2 - box.min.y, 0);
 
                     model.traverse((node) => {
                         if (node.isMesh) {
-                            node.castShadow = true; // Schaduw laten werpen
+                            node.castShadow = true;
                         }
                     });
 
@@ -175,12 +178,12 @@
                 }
             );
 
-            // Reset-knop functionaliteit
+            // Reset-knop
             document.getElementById('reset-button').addEventListener('click', () => {
                 animateCamera(camera, controls, INITIAL_CAMERA_POSITION);
             });
 
-            // Rotatie aan/uit functionaliteit
+            // Rotatieknop
             const rotationButton = document.getElementById('rotation-button');
             rotationButton.addEventListener('click', () => {
                 rotationEnabled = !rotationEnabled;
@@ -189,9 +192,8 @@
                 rotationButton.innerText = rotationEnabled ? "Rotation On" : "Rotation Off";
             });
 
-            // Camera-animatie
             function animateCamera(camera, controls, targetPosition) {
-                const duration = 1.5; // Duur van de animatie in seconden
+                const duration = 1.5;
                 const startPosition = { ...camera.position };
                 const startTime = performance.now();
 
@@ -213,20 +215,19 @@
                 requestAnimationFrame(updateCamera);
             }
 
-            // Animatie
             function animate() {
                 requestAnimationFrame(animate);
                 controls.update();
 
                 if (model && rotationEnabled) {
-                    model.rotation.y += ROTATION_SPEED / 60; // 60 FPS
+                    model.rotation.y += ROTATION_SPEED / 60;
                 }
 
                 renderer.render(scene, camera);
             }
             animate();
         } catch (err) {
-            console.error("Er is een fout opgetreden tijdens de initialisatie:", err);
+            console.error("Er is een fout opgetreden:", err);
         }
     </script>
 </body>
