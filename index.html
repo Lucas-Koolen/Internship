@@ -97,21 +97,49 @@
             const directionalLight = new THREE.DirectionalLight(0xffffff, 1.5);
             directionalLight.position.set(10, 15, 10);
             directionalLight.castShadow = true;
+            directionalLight.shadow.mapSize.width = 2048;
+            directionalLight.shadow.mapSize.height = 2048;
+            directionalLight.shadow.camera.near = 0.5;
+            directionalLight.shadow.camera.far = 100;
             scene.add(directionalLight);
 
-            // Ondergrond
+            const objectLight = new THREE.PointLight(0xffffff, 1.2); // Specifiek licht voor het 3D-object
+            objectLight.position.set(0, 10, 0);
+            scene.add(objectLight);
+
+            console.log("Licht toegevoegd aan de scene.");
+
+            // Ondergrond met fade
             const groundGeometry = new THREE.CircleGeometry(100, 128);
-            const groundMaterial = new THREE.MeshStandardMaterial({
-                color: 0xffffff,
-                roughness: 0.1,
-                metalness: 0.5,
+            const groundMaterial = new THREE.ShaderMaterial({
+                uniforms: {
+                    color1: { value: new THREE.Color(0xffffff) },
+                    color2: { value: new THREE.Color(0xf8f9fa) },
+                },
+                vertexShader: `
+                    varying vec2 vUv;
+                    void main() {
+                        vUv = uv;
+                        gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+                    }
+                `,
+                fragmentShader: `
+                    varying vec2 vUv;
+                    uniform vec3 color1;
+                    uniform vec3 color2;
+                    void main() {
+                        float dist = distance(vUv, vec2(0.5));
+                        gl_FragColor = vec4(mix(color1, color2, smoothstep(0.3, 1.0, dist)), 1.0);
+                    }
+                `,
+                side: THREE.DoubleSide,
             });
             const ground = new THREE.Mesh(groundGeometry, groundMaterial);
             ground.rotation.x = -Math.PI / 2;
             ground.receiveShadow = true;
             scene.add(ground);
 
-            console.log("Ronde ondergrond toegevoegd.");
+            console.log("Ronde ondergrond met fade toegevoegd.");
 
             // Variabelen
             let model = null;
@@ -124,11 +152,11 @@
             const controls = new THREE.OrbitControls(camera, renderer.domElement);
             controls.enableDamping = true;
             controls.dampingFactor = 0.25;
+
             controls.maxPolarAngle = Math.PI / 2.1;
 
             console.log("OrbitControls ingesteld.");
 
-            // Camera startpositie
             camera.position.set(INITIAL_CAMERA_POSITION.x, INITIAL_CAMERA_POSITION.y, INITIAL_CAMERA_POSITION.z);
             camera.lookAt(0, 0, 0);
 
@@ -139,8 +167,9 @@
                     model = gltf.scene;
 
                     const box = new THREE.Box3().setFromObject(model);
+                    const center = box.getCenter(new THREE.Vector3());
                     const size = box.getSize(new THREE.Vector3());
-                    model.position.set(0, size.y / 2, 0);
+                    model.position.set(0, size.y / 2 - box.min.y, 0);
 
                     model.traverse((node) => {
                         if (node.isMesh) {
@@ -148,18 +177,20 @@
                         }
                     });
 
+                    model.scale.set(1, 1, 1);
                     scene.add(model);
-                    console.log("Model geladen.");
+
+                    console.log("Model geladen en origin aangepast.");
                 },
                 undefined,
                 function (error) {
-                    console.error("Fout bij laden model:", error);
+                    console.error("Een fout is opgetreden bij het laden van het GLTF-bestand:", error);
                 }
             );
 
             // Reset-knop
             document.getElementById('reset-button').addEventListener('click', () => {
-                animateCameraAndControls(camera, controls, INITIAL_CAMERA_POSITION);
+                animateCamera(camera, controls, INITIAL_CAMERA_POSITION);
             });
 
             // Rotatieknop
@@ -171,13 +202,12 @@
                 rotationButton.innerText = rotationEnabled ? "Rotation On" : "Rotation Off";
             });
 
-            // Camera- en controls-reset met animatie
-            function animateCameraAndControls(camera, controls, targetPosition) {
-                const duration = 1.5; // Animatieduur in seconden
+            function animateCamera(camera, controls, targetPosition) {
+                const duration = 1.5;
                 const startPosition = { ...camera.position };
                 const startTime = performance.now();
 
-                function update() {
+                function updateCamera() {
                     const elapsedTime = (performance.now() - startTime) / 1000;
                     const t = Math.min(elapsedTime / duration, 1);
 
@@ -186,17 +216,15 @@
                     camera.position.z = THREE.MathUtils.lerp(startPosition.z, targetPosition.z, t);
 
                     camera.lookAt(0, 0, 0);
-                    controls.target.set(0, 0, 0); // Reset OrbitControls target
                     controls.update();
 
                     if (t < 1) {
-                        requestAnimationFrame(update);
+                        requestAnimationFrame(updateCamera);
                     }
                 }
-                requestAnimationFrame(update);
+                requestAnimationFrame(updateCamera);
             }
 
-            // Animatie
             function animate() {
                 requestAnimationFrame(animate);
                 controls.update();
@@ -209,7 +237,7 @@
             }
             animate();
         } catch (err) {
-            console.error("Fout tijdens initialisatie:", err);
+            console.error("Er is een fout opgetreden:", err);
         }
     </script>
 </body>
