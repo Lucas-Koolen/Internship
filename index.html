@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>3D Object Viewer</title>
+    <link rel="icon" href="data:," /> <!-- Voorkomt favicon-fout -->
     <style>
         body {
             margin: 0;
@@ -15,65 +16,83 @@
     </style>
 </head>
 <body>
-    <!-- Three.js en OrbitControls laden -->
+    <!-- Laden van Three.js, OrbitControls en GLTFLoader -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
 
     <script>
-        // Basis Three.js setup
-        const scene = new THREE.Scene();
-        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-        const renderer = new THREE.WebGLRenderer();
-        renderer.setSize(window.innerWidth, window.innerHeight);
-        document.body.appendChild(renderer.domElement);
+        console.log("Script gestart: Initialisatie...");
 
-        // Licht toevoegen
-        const ambientLight = new THREE.AmbientLight(0x404040, 2); // Zacht licht
-        scene.add(ambientLight);
-
-        const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
-        directionalLight.position.set(5, 10, 7.5);
-        scene.add(directionalLight);
-
-        // GLTF Loader
-        const loader = new THREE.GLTFLoader();
-        loader.load(
-            'testcube.gltf', // Pad naar het GLTF-bestand (staat in de root van de repo)
-            function (gltf) {
-                const model = gltf.scene;
-                scene.add(model);
-            },
-            function (xhr) {
-                console.log((xhr.loaded / xhr.total * 100).toFixed(2) + '% geladen');
-            },
-            function (error) {
-                console.error('Een fout is opgetreden bij het laden van het GLTF-bestand:', error);
-            }
-        );
-
-        // OrbitControls voor interactie
-        const controls = new THREE.OrbitControls(camera, renderer.domElement);
-        controls.enableDamping = true; // Smooth beweging
-        controls.dampingFactor = 0.25;
-
-        // Camera positie
-        camera.position.set(0, 2, 5);
-
-        // Resizen
-        window.addEventListener('resize', () => {
-            camera.aspect = window.innerWidth / window.innerHeight;
-            camera.updateProjectionMatrix();
+        try {
+            // Basis Three.js setup
+            const scene = new THREE.Scene();
+            const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+            const renderer = new THREE.WebGLRenderer();
             renderer.setSize(window.innerWidth, window.innerHeight);
-        });
+            document.body.appendChild(renderer.domElement);
 
-        // Animatielus
-        function animate() {
-            requestAnimationFrame(animate);
-            controls.update(); // Updates van de interactie
-            renderer.render(scene, camera);
+            console.log("Renderer, scene en camera succesvol ingesteld.");
+
+            // Licht toevoegen
+            const ambientLight = new THREE.AmbientLight(0x404040, 2); // Zacht licht
+            scene.add(ambientLight);
+
+            const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
+            directionalLight.position.set(5, 10, 7.5);
+            scene.add(directionalLight);
+
+            console.log("Licht toegevoegd aan de scene.");
+
+            // GLTF Loader
+            const loader = new THREE.GLTFLoader();
+            loader.load(
+                'testcube.gltf', // Pad naar het GLTF-bestand
+                function (gltf) {
+                    const model = gltf.scene;
+                    scene.add(model);
+                    console.log("GLTF-bestand succesvol geladen en toegevoegd aan de scene.");
+                },
+                function (xhr) {
+                    if (xhr.total) {
+                        console.log(`Laadvoortgang: ${(xhr.loaded / xhr.total * 100).toFixed(2)}% geladen`);
+                    } else {
+                        console.log(`Laadvoortgang: ${xhr.loaded} bytes geladen (totaal onbekend)`);
+                    }
+                },
+                function (error) {
+                    console.error("Een fout is opgetreden bij het laden van het GLTF-bestand:", error);
+                }
+            );
+
+            // OrbitControls voor interactie
+            const controls = new THREE.OrbitControls(camera, renderer.domElement);
+            controls.enableDamping = true; // Smooth beweging
+            controls.dampingFactor = 0.25;
+
+            console.log("OrbitControls ingesteld voor interactieve navigatie.");
+
+            // Camera positie
+            camera.position.set(0, 2, 5);
+
+            // Resizen
+            window.addEventListener('resize', () => {
+                console.log("Venstergrootte gewijzigd. Renderer en camera bijgewerkt.");
+                camera.aspect = window.innerWidth / window.innerHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(window.innerWidth, window.innerHeight);
+            });
+
+            // Animatielus
+            function animate() {
+                requestAnimationFrame(animate);
+                controls.update(); // Updates van de interactie
+                renderer.render(scene, camera);
+            }
+            animate();
+        } catch (err) {
+            console.error("Er is een fout opgetreden tijdens de initialisatie:", err);
         }
-        animate();
     </script>
 </body>
 </html>
