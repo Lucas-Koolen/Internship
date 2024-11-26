@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3D Object Viewer</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+        }
+        canvas {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
+
+    <script>
+        // Basis Three.js setup
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        const renderer = new THREE.WebGLRenderer();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        document.body.appendChild(renderer.domElement);
+
+        // Licht toevoegen
+        const ambientLight = new THREE.AmbientLight(0x404040, 2); // Zacht licht
+        scene.add(ambientLight);
+
+        const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
+        directionalLight.position.set(5, 10, 7.5);
+        scene.add(directionalLight);
+
+        // GLTF Loader
+        const loader = new THREE.GLTFLoader();
+        loader.load(
+            'testcube.gltf', // Naam van je bestand
+            function (gltf) {
+                const model = gltf.scene;
+                scene.add(model);
+            },
+            function (xhr) {
+                console.log((xhr.loaded / xhr.total) * 100 + '% geladen');
+            },
+            function (error) {
+                console.error('Een fout is opgetreden bij het laden van het GLTF-bestand:', error);
+            }
+        );
+
+        // OrbitControls voor interactie
+        const controls = new THREE.OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true; // Smooth beweging
+        controls.dampingFactor = 0.25;
+
+        // Camera positie
+        camera.position.set(0, 2, 5);
+
+        // Resizen
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        // Animatielus
+        function animate() {
+            requestAnimationFrame(animate);
+            controls.update(); // Updates van de interactie
+            renderer.render(scene, camera);
+        }
+        animate();
+    </script>
+</body>
+</html>
