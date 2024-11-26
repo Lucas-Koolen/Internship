@@ -90,7 +90,7 @@
 
             console.log("Licht toegevoegd aan de scene.");
 
-            // Environment: vloer met schaduw
+            // Ondergrond
             const groundGeometry = new THREE.PlaneGeometry(50, 50);
             const groundMaterial = new THREE.MeshStandardMaterial({ color: 0x666666 });
             const ground = new THREE.Mesh(groundGeometry, groundMaterial);
@@ -98,12 +98,12 @@
             ground.receiveShadow = true;
             scene.add(ground);
 
-            console.log("Environment toegevoegd (grond met schaduw).");
+            console.log("Ondergrond toegevoegd.");
 
             // Variabelen
             let model = null;
             const loader = new THREE.GLTFLoader();
-            const ROTATION_SPEED = (2 * Math.PI) / 60; // Langzame rotatie (1 rotatie per 60 sec)
+            const ROTATION_SPEED = (2 * Math.PI) / 40; // Langzame rotatie (1 rotatie per 40 sec)
             const INITIAL_CAMERA_POSITION = { x: 0, y: 5, z: 20 };
 
             // OrbitControls
@@ -111,7 +111,10 @@
             controls.enableDamping = true;
             controls.dampingFactor = 0.25;
 
-            console.log("OrbitControls ingesteld.");
+            // Beperk de camera
+            controls.maxPolarAngle = Math.PI / 2.1; // Voorkom dat de camera onder de grond gaat
+
+            console.log("OrbitControls ingesteld en camera beperkt.");
 
             // Startpositie van de camera
             camera.position.set(INITIAL_CAMERA_POSITION.x, INITIAL_CAMERA_POSITION.y, INITIAL_CAMERA_POSITION.z);
@@ -122,6 +125,13 @@
                 'testcube.gltf',
                 function (gltf) {
                     model = gltf.scene;
+
+                    // Origin aanpassen
+                    const box = new THREE.Box3().setFromObject(model);
+                    const center = box.getCenter(new THREE.Vector3());
+                    model.position.sub(center); // Breng origin naar het midden
+                    model.position.y += box.min.y * -1; // Til het model omhoog zodat de ondergrond eronder is
+
                     model.traverse((node) => {
                         if (node.isMesh) {
                             node.material = new THREE.MeshStandardMaterial({ color: 0xff6347 });
@@ -130,10 +140,9 @@
                     });
 
                     model.scale.set(1, 1, 1);
-                    model.position.set(0, 0, 0);
                     scene.add(model);
 
-                    console.log("Model toegevoegd aan de scene.");
+                    console.log("Model geladen en origin aangepast.");
                 },
                 undefined,
                 function (error) {
@@ -141,17 +150,8 @@
                 }
             );
 
-            // Resizen
-            window.addEventListener('resize', () => {
-                console.log("Venstergrootte gewijzigd. Renderer en camera bijgewerkt.");
-                camera.aspect = window.innerWidth / window.innerHeight;
-                camera.updateProjectionMatrix();
-                renderer.setSize(window.innerWidth, window.innerHeight);
-            });
-
             // Reset-knop functionaliteit
             document.getElementById('reset-button').addEventListener('click', () => {
-                console.log("Reset-knop geklikt. Camera wordt gereset.");
                 animateCamera(camera, controls, INITIAL_CAMERA_POSITION);
             });
 
@@ -163,7 +163,7 @@
 
                 function updateCamera() {
                     const elapsedTime = (performance.now() - startTime) / 1000;
-                    const t = Math.min(elapsedTime / duration, 1); // Normaliseer tijd tussen 0 en 1
+                    const t = Math.min(elapsedTime / duration, 1);
 
                     camera.position.x = THREE.MathUtils.lerp(startPosition.x, targetPosition.x, t);
                     camera.position.y = THREE.MathUtils.lerp(startPosition.y, targetPosition.y, t);
@@ -174,8 +174,6 @@
 
                     if (t < 1) {
                         requestAnimationFrame(updateCamera);
-                    } else {
-                        console.log("Camera-reset animatie voltooid.");
                     }
                 }
                 requestAnimationFrame(updateCamera);
