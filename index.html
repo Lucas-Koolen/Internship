@@ -15,6 +15,25 @@
         canvas {
             display: block;
         }
+        #ui {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            z-index: 10;
+        }
+        #ui button {
+            background-color: #ff6347;
+            border: none;
+            color: white;
+            padding: 10px 20px;
+            font-size: 14px;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+        #ui button:hover {
+            background-color: #e5533d;
+        }
         #copyright {
             position: fixed;
             bottom: 10px;
@@ -25,34 +44,18 @@
         #copyright img {
             width: 100px;
         }
-        #loader {
-            position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            color: white;
-            font-size: 1.5em;
-            font-weight: bold;
-            animation: fadeIn 2s ease-in-out infinite alternate;
-        }
-        @keyframes fadeIn {
-            from {
-                opacity: 0.5;
-            }
-            to {
-                opacity: 1;
-            }
-        }
     </style>
 </head>
 <body>
+    <!-- Reset Knop -->
+    <div id="ui">
+        <button id="reset-button">Reset Camera</button>
+    </div>
+
     <!-- Copyright Logo -->
     <div id="copyright">
         <img src="fev-logo.png" alt="FEV Logo">
     </div>
-
-    <!-- Loader -->
-    <div id="loader">Model wordt geladen...</div>
 
     <!-- Scripts voor Three.js en OrbitControls -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
@@ -63,60 +66,47 @@
         console.log("Script gestart: Initialisatie...");
 
         try {
+            // Three.js setup
             const scene = new THREE.Scene();
             const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
             const renderer = new THREE.WebGLRenderer({ antialias: true });
             renderer.setSize(window.innerWidth, window.innerHeight);
             renderer.setClearColor(0x1a1a1a);
+            renderer.shadowMap.enabled = true; // Schaduw inschakelen
             document.body.appendChild(renderer.domElement);
 
             console.log("Renderer, scene en camera succesvol ingesteld.");
 
-            const ambientLight = new THREE.AmbientLight(0xffffff, 1.5);
+            // Licht toevoegen
+            const ambientLight = new THREE.AmbientLight(0xffffff, 1.5); // Helder licht
             scene.add(ambientLight);
 
             const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
-            directionalLight.position.set(5, 10, 7.5);
+            directionalLight.position.set(5, 10, 5);
+            directionalLight.castShadow = true; // Schaduw laten werpen
+            directionalLight.shadow.mapSize.width = 1024; // Scherpe schaduwen
+            directionalLight.shadow.mapSize.height = 1024;
             scene.add(directionalLight);
 
             console.log("Licht toegevoegd aan de scene.");
 
+            // Environment: vloer met schaduw
+            const groundGeometry = new THREE.PlaneGeometry(50, 50);
+            const groundMaterial = new THREE.MeshStandardMaterial({ color: 0x666666 });
+            const ground = new THREE.Mesh(groundGeometry, groundMaterial);
+            ground.rotation.x = -Math.PI / 2; // Plat leggen
+            ground.receiveShadow = true;
+            scene.add(ground);
+
+            console.log("Environment toegevoegd (grond met schaduw).");
+
+            // Variabelen
             let model = null;
             const loader = new THREE.GLTFLoader();
-            let isInteracting = false; // Om te tracken of OrbitControls wordt gebruikt
-            let lastInteractionTime = 0; // Tijdstip van laatste interactie
             const ROTATION_SPEED = (2 * Math.PI) / 60; // Langzame rotatie (1 rotatie per 60 sec)
+            const INITIAL_CAMERA_POSITION = { x: 0, y: 5, z: 20 };
 
-            loader.load(
-                'testcube.gltf',
-                function (gltf) {
-                    model = gltf.scene;
-                    model.traverse((node) => {
-                        if (node.isMesh) {
-                            node.material = new THREE.MeshStandardMaterial({ color: 0xff6347 });
-                        }
-                    });
-                    console.log("Rood standaardmateriaal toegepast op alle meshes.");
-
-                    model.scale.set(1, 1, 1);
-                    model.position.set(0, 0, 0);
-                    scene.add(model);
-
-                    document.getElementById("loader").style.display = "none";
-                    console.log("Model toegevoegd aan de scene.");
-                },
-                function (xhr) {
-                    if (xhr.total) {
-                        console.log(`Laadvoortgang: ${(xhr.loaded / xhr.total * 100).toFixed(2)}% geladen`);
-                    } else {
-                        console.log(`Laadvoortgang: ${xhr.loaded} bytes geladen (totaal onbekend)`);
-                    }
-                },
-                function (error) {
-                    console.error("Een fout is opgetreden bij het laden van het GLTF-bestand:", error);
-                }
-            );
-
+            // OrbitControls
             const controls = new THREE.OrbitControls(camera, renderer.domElement);
             controls.enableDamping = true;
             controls.dampingFactor = 0.25;
@@ -124,9 +114,34 @@
             console.log("OrbitControls ingesteld.");
 
             // Startpositie van de camera
-            camera.position.set(0, 5, 20); // Verder uitgezoomd
+            camera.position.set(INITIAL_CAMERA_POSITION.x, INITIAL_CAMERA_POSITION.y, INITIAL_CAMERA_POSITION.z);
             camera.lookAt(0, 0, 0);
 
+            // Model laden
+            loader.load(
+                'testcube.gltf',
+                function (gltf) {
+                    model = gltf.scene;
+                    model.traverse((node) => {
+                        if (node.isMesh) {
+                            node.material = new THREE.MeshStandardMaterial({ color: 0xff6347 });
+                            node.castShadow = true; // Schaduw laten werpen
+                        }
+                    });
+
+                    model.scale.set(1, 1, 1);
+                    model.position.set(0, 0, 0);
+                    scene.add(model);
+
+                    console.log("Model toegevoegd aan de scene.");
+                },
+                undefined,
+                function (error) {
+                    console.error("Een fout is opgetreden bij het laden van het GLTF-bestand:", error);
+                }
+            );
+
+            // Resizen
             window.addEventListener('resize', () => {
                 console.log("Venstergrootte gewijzigd. Renderer en camera bijgewerkt.");
                 camera.aspect = window.innerWidth / window.innerHeight;
@@ -134,24 +149,44 @@
                 renderer.setSize(window.innerWidth, window.innerHeight);
             });
 
-            // Luisteren naar OrbitControls interacties
-            controls.addEventListener('start', () => {
-                isInteracting = true;
-                lastInteractionTime = Date.now();
+            // Reset-knop functionaliteit
+            document.getElementById('reset-button').addEventListener('click', () => {
+                console.log("Reset-knop geklikt. Camera wordt gereset.");
+                animateCamera(camera, controls, INITIAL_CAMERA_POSITION);
             });
 
-            controls.addEventListener('end', () => {
-                isInteracting = false;
-                lastInteractionTime = Date.now(); // Sla de tijd van interactie op
-            });
+            // Camera-animatie
+            function animateCamera(camera, controls, targetPosition) {
+                const duration = 1.5; // Duur van de animatie in seconden
+                const startPosition = { ...camera.position };
+                const startTime = performance.now();
 
+                function updateCamera() {
+                    const elapsedTime = (performance.now() - startTime) / 1000;
+                    const t = Math.min(elapsedTime / duration, 1); // Normaliseer tijd tussen 0 en 1
+
+                    camera.position.x = THREE.MathUtils.lerp(startPosition.x, targetPosition.x, t);
+                    camera.position.y = THREE.MathUtils.lerp(startPosition.y, targetPosition.y, t);
+                    camera.position.z = THREE.MathUtils.lerp(startPosition.z, targetPosition.z, t);
+
+                    camera.lookAt(0, 0, 0);
+                    controls.update();
+
+                    if (t < 1) {
+                        requestAnimationFrame(updateCamera);
+                    } else {
+                        console.log("Camera-reset animatie voltooid.");
+                    }
+                }
+                requestAnimationFrame(updateCamera);
+            }
+
+            // Animatie
             function animate() {
                 requestAnimationFrame(animate);
                 controls.update();
 
-                // Langzame rotatie alleen als er geen interactie is
-                const now = Date.now();
-                if (!isInteracting && model && now - lastInteractionTime > 5000) { // 5 seconden wachttijd
+                if (model) {
                     model.rotation.y += ROTATION_SPEED / 60; // 60 FPS
                 }
 
