@@ -91,21 +91,25 @@
             console.log("Renderer, scene en camera succesvol ingesteld.");
 
             // Licht toevoegen
-            const ambientLight = new THREE.AmbientLight(0xffffff, 1.0); // Gelijkmatig licht
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.6); // Zacht omgevingslicht
             scene.add(ambientLight);
 
-            const spotLight = new THREE.SpotLight(0xffffff, 1.5);
-            spotLight.position.set(0, 50, 0); // Recht boven
-            spotLight.castShadow = true;
-            spotLight.shadow.mapSize.width = 2048;
-            spotLight.shadow.mapSize.height = 2048;
-            spotLight.shadow.camera.near = 0.5;
-            spotLight.shadow.camera.far = 100;
-            scene.add(spotLight);
+            const directionalLight = new THREE.DirectionalLight(0xffffff, 1.5);
+            directionalLight.position.set(10, 15, 10);
+            directionalLight.castShadow = true;
+            directionalLight.shadow.mapSize.width = 2048;
+            directionalLight.shadow.mapSize.height = 2048;
+            directionalLight.shadow.camera.near = 0.5;
+            directionalLight.shadow.camera.far = 100;
+            scene.add(directionalLight);
+
+            const objectLight = new THREE.PointLight(0xffffff, 1.2); // Specifiek licht voor het 3D-object
+            objectLight.position.set(0, 10, 0);
+            scene.add(objectLight);
 
             console.log("Licht toegevoegd aan de scene.");
 
-            // Ronde ondergrond met fade-effect
+            // Ondergrond met fade
             const groundGeometry = new THREE.CircleGeometry(100, 128);
             const groundMaterial = new THREE.ShaderMaterial({
                 uniforms: {
@@ -125,7 +129,7 @@
                     uniform vec3 color2;
                     void main() {
                         float dist = distance(vUv, vec2(0.5));
-                        gl_FragColor = vec4(mix(color1, color2, smoothstep(0.5, 1.0, dist)), 1.0);
+                        gl_FragColor = vec4(mix(color1, color2, smoothstep(0.3, 1.0, dist)), 1.0);
                     }
                 `,
                 side: THREE.DoubleSide,
@@ -135,7 +139,7 @@
             ground.receiveShadow = true;
             scene.add(ground);
 
-            console.log("Ronde ondergrond toegevoegd.");
+            console.log("Ronde ondergrond met fade toegevoegd.");
 
             // Variabelen
             let model = null;
