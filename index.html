@@ -123,7 +123,8 @@
 
             console.log("OrbitControls ingesteld.");
 
-            camera.position.set(0, 2, 10);
+            // Startpositie van de camera
+            camera.position.set(0, 5, 20); // Verder uitgezoomd
             camera.lookAt(0, 0, 0);
 
             window.addEventListener('resize', () => {
@@ -140,6 +141,7 @@
             });
 
             controls.addEventListener('end', () => {
+                isInteracting = false;
                 lastInteractionTime = Date.now(); // Sla de tijd van interactie op
             });
 
@@ -148,11 +150,9 @@
                 controls.update();
 
                 // Langzame rotatie alleen als er geen interactie is
-                if (!isInteracting && model) {
-                    const now = Date.now();
-                    if (now - lastInteractionTime > 5000) { // 5 seconden wachttijd
-                        model.rotation.y += ROTATION_SPEED / 60; // 60 FPS
-                    }
+                const now = Date.now();
+                if (!isInteracting && model && now - lastInteractionTime > 5000) { // 5 seconden wachttijd
+                    model.rotation.y += ROTATION_SPEED / 60; // 60 FPS
                 }
 
                 renderer.render(scene, camera);
