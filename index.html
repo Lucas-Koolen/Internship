@@ -64,7 +64,19 @@
                     model.position.set(0, 0, 0);
                     scene.add(model);
 
-                    console.log("Model toegevoegd aan de scene met schaal 1,1,1 en positie 0,0,0.");
+                    // Dynamische camera aanpassing
+                    const box = new THREE.Box3().setFromObject(model);
+                    const size = new THREE.Vector3();
+                    box.getSize(size);
+                    const maxDim = Math.max(size.x, size.y, size.z);
+                    const fov = camera.fov * (Math.PI / 180);
+                    let cameraZ = Math.abs(maxDim / Math.sin(fov / 2)); // Bereken de beste z-positie
+
+                    cameraZ *= 1.5; // Extra marge om verder weg te staan
+                    camera.position.set(0, maxDim / 2, cameraZ);
+                    camera.lookAt(box.getCenter(new THREE.Vector3()));
+
+                    console.log(`Camera gepositioneerd op: ${camera.position.x}, ${camera.position.y}, ${camera.position.z}`);
                 },
                 function (xhr) {
                     if (xhr.total) {
@@ -84,10 +96,6 @@
             controls.dampingFactor = 0.25;
 
             console.log("OrbitControls ingesteld voor interactieve navigatie.");
-
-            // Camera positie
-            camera.position.set(0, 2, 5);
-            camera.lookAt(0, 0, 0);
 
             // Resizen
             window.addEventListener('resize', () => {
