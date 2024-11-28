@@ -90,11 +90,12 @@
         }
         body.presentation-mode canvas {
             display: block;
-            width: 100%;
-            height: 100%;
             position: fixed;
             top: 0;
             left: 0;
+            width: 100%;
+            height: 100%;
+            margin: 0;
         }
         body.presentation-mode #menu,
         body.presentation-mode #menu-toggle {
@@ -210,32 +211,17 @@
                 }
             );
 
-            function animateCameraReset() {
-                const startPosition = camera.position.clone();
-                const targetPosition = new THREE.Vector3(
-                    INITIAL_CAMERA_POSITION.x,
-                    INITIAL_CAMERA_POSITION.y,
-                    INITIAL_CAMERA_POSITION.z
-                );
-                const startTime = performance.now();
-                const duration = 1000;
-
-                function animate(time) {
-                    const elapsed = time - startTime;
-                    const progress = Math.min(elapsed / duration, 1);
-                    camera.position.lerpVectors(startPosition, targetPosition, progress);
-                    controls.target.lerpVectors(controls.target, new THREE.Vector3(0, 0, 0), progress);
-                    controls.update();
-
-                    if (progress < 1) {
-                        requestAnimationFrame(animate);
-                    }
-                }
-
-                requestAnimationFrame(animate);
+            function setCanvasSize() {
+                renderer.setSize(window.innerWidth, window.innerHeight);
+                camera.aspect = window.innerWidth / window.innerHeight;
+                camera.updateProjectionMatrix();
             }
 
-            document.getElementById('reset-button').addEventListener('click', animateCameraReset);
+            window.addEventListener('resize', () => {
+                if (document.body.classList.contains('presentation-mode')) {
+                    setCanvasSize();
+                }
+            });
 
             const menuToggle = document.getElementById('menu-toggle');
             const menu = document.getElementById('menu');
@@ -271,9 +257,13 @@
 
                 if (!isPresentationMode) {
                     body.classList.add('presentation-mode');
-                    document.documentElement.requestFullscreen().catch((err) => {
-                        console.error('Fullscreen-modus niet mogelijk:', err);
-                    });
+                    document.documentElement.requestFullscreen()
+                        .then(() => {
+                            setCanvasSize();
+                        })
+                        .catch((err) => {
+                            console.error('Fullscreen-modus niet mogelijk:', err);
+                        });
                 } else {
                     exitPresentationMode();
                 }
@@ -289,8 +279,41 @@
                 const body = document.body;
                 if (body.classList.contains('presentation-mode')) {
                     body.classList.remove('presentation-mode');
+                    setCanvasSize();
+                    if (document.fullscreenElement) {
+                        document.exitFullscreen().catch((err) => {
+                            console.error('Fullscreen-modus afsluiten mislukt:', err);
+                        });
+                    }
                 }
             }
+
+            function animateCameraReset() {
+                const startPosition = camera.position.clone();
+                const targetPosition = new THREE.Vector3(
+                    INITIAL_CAMERA_POSITION.x,
+                    INITIAL_CAMERA_POSITION.y,
+                    INITIAL_CAMERA_POSITION.z
+                );
+                const startTime = performance.now();
+                const duration = 1000;
+
+                function animate(time) {
+                    const elapsed = time - startTime;
+                    const progress = Math.min(elapsed / duration, 1);
+                    camera.position.lerpVectors(startPosition, targetPosition, progress);
+                    controls.target.lerpVectors(controls.target, new THREE.Vector3(0, 0, 0), progress);
+                    controls.update();
+
+                    if (progress < 1) {
+                        requestAnimationFrame(animate);
+                    }
+                }
+
+                requestAnimationFrame(animate);
+            }
+
+            document.getElementById('reset-button').addEventListener('click', animateCameraReset);
 
             function animate() {
                 requestAnimationFrame(animate);
