@@ -15,62 +15,69 @@
         canvas {
             display: block;
         }
-        #ui {
+        #menu-toggle {
             position: fixed;
             top: 20px;
             left: 20px;
-            z-index: 10;
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-        }
-        #ui button {
-            padding: 12px 25px;
+            z-index: 20;
+            background-color: #cc0000;
+            color: white;
             font-size: 16px;
+            font-weight: bold;
+            border: none;
+            border-radius: 8px;
+            padding: 12px;
+            cursor: pointer;
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.2);
+            transition: background-color 0.3s ease;
+        }
+        #menu-toggle:hover {
+            background-color: #990000;
+        }
+        #menu {
+            position: fixed;
+            top: 60px;
+            left: 20px;
+            background-color: #ffffff;
+            border: 1px solid #cc0000;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            padding: 15px;
+            display: none;
+            z-index: 10;
+        }
+        #menu button {
+            display: block;
+            width: 100%;
+            margin-bottom: 10px;
+            padding: 10px 20px;
+            font-size: 14px;
             border-radius: 8px;
             cursor: pointer;
             border: none;
-            transition: all 0.3s ease;
             font-weight: bold;
+            transition: all 0.3s ease;
             background-color: #cc0000;
             color: white;
             text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.2);
         }
-        #ui button:hover {
+        #menu button:hover {
             background-color: #990000;
-            box-shadow: 0 4px 8px rgba(204, 0, 0, 0.5);
-        }
-        #rotation-button.off {
-            background-color: transparent;
-            color: #cc0000;
-            border: 2px solid #cc0000;
-        }
-        #copyright {
-            position: fixed;
-            bottom: 10px;
-            right: 10px;
-            z-index: 10;
-            opacity: 0.9;
-        }
-        #copyright img {
-            width: 100px;
         }
     </style>
 </head>
 <body>
-    <!-- UI Knoppen -->
-    <div id="ui">
+    <!-- Menu Toggle -->
+    <button id="menu-toggle">Menu</button>
+
+    <!-- Menu -->
+    <div id="menu">
         <button id="reset-button">Reset Camera</button>
         <button id="rotation-button" class="on">Rotation On</button>
         <button id="screenshot-button">Take Screenshot</button>
     </div>
 
-    <!-- Copyright Logo -->
-    <div id="copyright">
-        <img src="fev-logo.png" alt="FEV Logo">
-    </div>
-
-    <!-- Scripts voor Three.js en OrbitControls -->
+    <!-- Scripts voor Three.js -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
@@ -89,10 +96,8 @@
             renderer.shadowMap.type = THREE.PCFSoftShadowMap;
             document.body.appendChild(renderer.domElement);
 
-            console.log("Renderer, scene en camera succesvol ingesteld.");
-
             // Licht toevoegen
-            const ambientLight = new THREE.AmbientLight(0xffffff, 0.6); // Zacht omgevingslicht
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
             scene.add(ambientLight);
 
             const directionalLight = new THREE.DirectionalLight(0xffffff, 1.5);
@@ -112,8 +117,6 @@
             ground.receiveShadow = true;
             scene.add(ground);
 
-            console.log("Ronde ondergrond toegevoegd.");
-
             // Variabelen
             let model = null;
             let rotationEnabled = true;
@@ -127,8 +130,6 @@
             controls.dampingFactor = 0.25;
             controls.maxPolarAngle = Math.PI / 2.1;
 
-            console.log("OrbitControls ingesteld.");
-
             // Camera startpositie
             camera.position.set(INITIAL_CAMERA_POSITION.x, INITIAL_CAMERA_POSITION.y, INITIAL_CAMERA_POSITION.z);
             camera.lookAt(0, 0, 0);
@@ -138,19 +139,18 @@
                 'testcubev2.gltf',
                 function (gltf) {
                     model = gltf.scene;
-
-                    const box = new THREE.Box3().setFromObject(model);
-                    const size = box.getSize(new THREE.Vector3());
-                    model.position.set(0, size.y / 2, 0);
-
-                    model.traverse((node) => {
-                        if (node.isMesh) {
-                            node.castShadow = true;
-                        }
-                    });
-
+                    model.position.set(0, -10, 0); // Start lager
                     scene.add(model);
-                    console.log("Model geladen.");
+
+                    // Intro animatie omhoog
+                    const targetPositionY = 0;
+                    function animateModel() {
+                        if (model.position.y < targetPositionY) {
+                            model.position.y += 0.1;
+                            requestAnimationFrame(animateModel);
+                        }
+                    }
+                    animateModel();
                 },
                 undefined,
                 function (error) {
@@ -172,9 +172,9 @@
                 rotationButton.innerText = rotationEnabled ? "Rotation On" : "Rotation Off";
             });
 
-            // Camera- en controls-reset met animatie
+            // Camera reset animatie
             function animateCameraAndControls(camera, controls, targetPosition) {
-                const duration = 1.5; // Animatieduur in seconden
+                const duration = 1.5;
                 const startPosition = { ...camera.position };
                 const startTime = performance.now();
 
@@ -187,7 +187,7 @@
                     camera.position.z = THREE.MathUtils.lerp(startPosition.z, targetPosition.z, t);
 
                     camera.lookAt(0, 0, 0);
-                    controls.target.set(0, 0, 0); // Reset OrbitControls target
+                    controls.target.set(0, 0, 0);
                     controls.update();
 
                     if (t < 1) {
@@ -197,15 +197,17 @@
                 requestAnimationFrame(update);
             }
 
-            // UI: Screenshot maken
+            // Screenshot maken
             document.getElementById('screenshot-button').addEventListener('click', () => {
-            renderer.render(scene, camera);
-            const link = document.createElement('a');
-            link.download = 'screenshot.png';
-            link.href = renderer.domElement.toDataURL();
-            link.click();
+                const originalSize = { width: renderer.domElement.width, height: renderer.domElement.height };
+                renderer.setSize(1920, 1080);
+                renderer.render(scene, camera);
+                const link = document.createElement('a');
+                link.download = 'FC-FEV-HD.png';
+                link.href = renderer.domElement.toDataURL();
+                link.click();
+                renderer.setSize(originalSize.width, originalSize.height);
             });
-
 
             // Animatie
             function animate() {
@@ -219,6 +221,13 @@
                 renderer.render(scene, camera);
             }
             animate();
+
+            // Menu toggle
+            const menuToggle = document.getElementById('menu-toggle');
+            const menu = document.getElementById('menu');
+            menuToggle.addEventListener('click', () => {
+                menu.style.display = menu.style.display === 'block' ? 'none' : 'block';
+            });
         } catch (err) {
             console.error("Fout tijdens initialisatie:", err);
         }
