@@ -44,14 +44,16 @@
             border-radius: 8px;
             box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
             padding: 15px;
-            display: none;
             z-index: 10;
             opacity: 0;
-            transform: translateY(-10px);
-            transition: opacity 0.3s ease, transform 0.3s ease;
+            transform: translateY(-20px);
+            pointer-events: none;
+            transition: opacity 0.4s ease, transform 0.4s ease;
         }
         #menu.show {
-            display: block;
+            opacity: 1;
+            transform: translateY(0);
+            pointer-events: auto;
         }
         #menu button {
             display: block;
@@ -183,6 +185,7 @@
                 }
             );
 
+            // Camera-reset met animatie
             function animateCameraReset() {
                 const startPosition = camera.position.clone();
                 const targetPosition = new THREE.Vector3(
@@ -212,44 +215,9 @@
 
             const menuToggle = document.getElementById('menu-toggle');
             const menu = document.getElementById('menu');
-            let menuVisible = false;
 
             menuToggle.addEventListener('click', () => {
-                menuVisible = !menuVisible;
-
-                if (menuVisible) {
-                    menu.style.display = 'block';
-                    menu.style.opacity = 0;
-                    menu.style.transform = 'translateY(-10px)';
-
-                    let startTime = performance.now();
-                    function fadeInMenu(time) {
-                        const elapsed = time - startTime;
-                        const progress = Math.min(elapsed / 300, 1); // 300ms animatie
-                        menu.style.opacity = progress;
-                        menu.style.transform = `translateY(${(progress - 1) * 10}px)`;
-
-                        if (progress < 1) {
-                            requestAnimationFrame(fadeInMenu);
-                        }
-                    }
-                    requestAnimationFrame(fadeInMenu);
-                } else {
-                    let startTime = performance.now();
-                    function fadeOutMenu(time) {
-                        const elapsed = time - startTime;
-                        const progress = Math.min(elapsed / 300, 1); // 300ms animatie
-                        menu.style.opacity = 1 - progress;
-                        menu.style.transform = `translateY(-${progress * 10}px)`;
-
-                        if (progress < 1) {
-                            requestAnimationFrame(fadeOutMenu);
-                        } else {
-                            menu.style.display = 'none';
-                        }
-                    }
-                    requestAnimationFrame(fadeOutMenu);
-                }
+                menu.classList.toggle('show');
             });
 
             const rotationButton = document.getElementById('rotation-button');
