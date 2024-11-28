@@ -36,7 +36,7 @@
         }
         #menu {
             position: fixed;
-            top: 60px;
+            top: 20px;
             left: 20px;
             background-color: #ffffff;
             border: 1px solid #cc0000;
@@ -45,6 +45,14 @@
             padding: 15px;
             display: none;
             z-index: 10;
+            opacity: 0;
+            transform: translateY(-10px);
+            transition: opacity 0.3s ease, transform 0.3s ease;
+        }
+        #menu.show {
+            display: block;
+            opacity: 1;
+            transform: translateY(0);
         }
         #menu button {
             display: block;
@@ -64,6 +72,16 @@
         #menu button:hover {
             background-color: #990000;
         }
+        #copyright {
+            position: fixed;
+            bottom: 10px;
+            right: 10px;
+            z-index: 10;
+            opacity: 0.9;
+        }
+        #copyright img {
+            width: 100px;
+        }
     </style>
 </head>
 <body>
@@ -75,6 +93,11 @@
         <button id="reset-button">Reset Camera</button>
         <button id="rotation-button" class="on">Rotation On</button>
         <button id="screenshot-button">Take Screenshot</button>
+    </div>
+
+    <!-- Copyright Logo -->
+    <div id="copyright">
+        <img src="fev-logo.png" alt="FEV Logo">
     </div>
 
     <!-- Scripts voor Three.js -->
@@ -139,18 +162,19 @@
                 'testcubev2.gltf',
                 function (gltf) {
                     model = gltf.scene;
-                    model.position.set(0, -10, 0); // Start lager
-                    scene.add(model);
 
-                    // Intro animatie omhoog
-                    const targetPositionY = 0;
-                    function animateModel() {
-                        if (model.position.y < targetPositionY) {
-                            model.position.y += 0.1;
-                            requestAnimationFrame(animateModel);
+                    const box = new THREE.Box3().setFromObject(model);
+                    const size = box.getSize(new THREE.Vector3());
+                    model.position.set(0, size.y / 2, 0); // Correcte hoogte boven grond
+
+                    model.traverse((node) => {
+                        if (node.isMesh) {
+                            node.castShadow = true;
                         }
-                    }
-                    animateModel();
+                    });
+
+                    scene.add(model);
+                    console.log("Model geladen.");
                 },
                 undefined,
                 function (error) {
@@ -226,7 +250,7 @@
             const menuToggle = document.getElementById('menu-toggle');
             const menu = document.getElementById('menu');
             menuToggle.addEventListener('click', () => {
-                menu.style.display = menu.style.display === 'block' ? 'none' : 'block';
+                menu.classList.toggle('show');
             });
         } catch (err) {
             console.error("Fout tijdens initialisatie:", err);
