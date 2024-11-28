@@ -63,9 +63,6 @@
         <button id="reset-button">Reset Camera</button>
         <button id="rotation-button" class="on">Rotation On</button>
         <button id="screenshot-button">Take Screenshot</button>
-        <select id="model-selector">
-            <option value="testcubev2.gltf">Test Cube</option>
-            <option value="testcube.gltf">Test Cube (Old)</option>
     </div>
 
     <!-- Copyright Logo -->
@@ -209,11 +206,6 @@
             link.click();
             });
 
-            // UI: Model selecteren
-            document.getElementById('model-selector').addEventListener('change', (event) => {
-            currentModel = event.target.value;
-            loadModel(currentModel);
-            });
 
             // Animatie
             function animate() {
