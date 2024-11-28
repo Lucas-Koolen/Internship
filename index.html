@@ -83,6 +83,30 @@
         #copyright img {
             width: 100px;
         }
+        body.presentation-mode {
+            cursor: none;
+            overflow: hidden;
+            background: black;
+        }
+        body.presentation-mode canvas {
+            display: block;
+            width: 100vw;
+            height: 100vh;
+            position: fixed;
+            top: 0;
+            left: 0;
+        }
+        body.presentation-mode #menu,
+        body.presentation-mode #menu-toggle {
+            display: none;
+        }
+        body.presentation-mode #copyright {
+            position: fixed;
+            bottom: 10px;
+            right: 10px;
+            z-index: 10;
+            opacity: 1;
+        }
     </style>
 </head>
 <body>
@@ -94,6 +118,7 @@
         <button id="reset-button">Reset Camera</button>
         <button id="rotation-button" class="on">Rotation On</button>
         <button id="screenshot-button">Take Screenshot</button>
+        <button id="presentation-button">Presentation Mode</button>
     </div>
 
     <!-- Copyright Logo -->
@@ -185,7 +210,6 @@
                 }
             );
 
-            // Camera-reset met animatie
             function animateCameraReset() {
                 const startPosition = camera.position.clone();
                 const targetPosition = new THREE.Vector3(
@@ -194,7 +218,7 @@
                     INITIAL_CAMERA_POSITION.z
                 );
                 const startTime = performance.now();
-                const duration = 1000; // 1 seconde
+                const duration = 1000;
 
                 function animate(time) {
                     const elapsed = time - startTime;
@@ -238,6 +262,26 @@
                 link.href = renderer.domElement.toDataURL();
                 link.click();
                 renderer.setSize(originalSize.width, originalSize.height);
+            });
+
+            const presentationButton = document.getElementById('presentation-button');
+            presentationButton.addEventListener('click', () => {
+                const body = document.body;
+                const isPresentationMode = body.classList.contains('presentation-mode');
+
+                if (!isPresentationMode) {
+                    body.classList.add('presentation-mode');
+                    document.documentElement.requestFullscreen().catch((err) => {
+                        console.error('Fullscreen-modus niet mogelijk:', err);
+                    });
+                } else {
+                    body.classList.remove('presentation-mode');
+                    if (document.fullscreenElement) {
+                        document.exitFullscreen().catch((err) => {
+                            console.error('Fullscreen-modus afsluiten mislukt:', err);
+                        });
+                    }
+                }
             });
 
             function animate() {
