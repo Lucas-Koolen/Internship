@@ -1,101 +1,233 @@
-<script>
-    console.log("Script gestart: Initialisatie...");
-
-    try {
-        // Three.js setup
-        const scene = new THREE.Scene();
-        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-        const renderer = new THREE.WebGLRenderer({ antialias: true }); // Antialias voor betere randen
-        renderer.setSize(window.innerWidth, window.innerHeight);
-        renderer.setClearColor(0xf8f9fa);
-        renderer.shadowMap.enabled = true;
-        renderer.shadowMap.type = THREE.PCFSoftShadowMap; // Zachtere schaduwen
-        renderer.setPixelRatio(window.devicePixelRatio); // Verbeter rendering op high-DPI schermen
-        document.body.appendChild(renderer.domElement);
-
-        // Licht toevoegen
-        const ambientLight = new THREE.AmbientLight(0xffffff, 0.5); // Zacht omgevingslicht
-        scene.add(ambientLight);
-
-        const directionalLight = new THREE.DirectionalLight(0xffffff, 1.5);
-        directionalLight.position.set(10, 15, 10);
-        directionalLight.castShadow = true;
-        directionalLight.shadow.mapSize.width = 2048; // Hogere resolutie voor schaduwmap
-        directionalLight.shadow.mapSize.height = 2048;
-        directionalLight.shadow.camera.near = 1; // Dichtstbijzijnde afstand van schaduw
-        directionalLight.shadow.camera.far = 50; // Verste afstand van schaduw
-        directionalLight.shadow.camera.left = -20; // Schaduwcamera instellen
-        directionalLight.shadow.camera.right = 20;
-        directionalLight.shadow.camera.top = 20;
-        directionalLight.shadow.camera.bottom = -20;
-        scene.add(directionalLight);
-
-        // Helper toevoegen om lichtposities en schaduwen te debuggen (optioneel)
-        // const helper = new THREE.DirectionalLightHelper(directionalLight);
-        // scene.add(helper);
-
-        // Ondergrond
-        const groundGeometry = new THREE.CircleGeometry(100, 128);
-        const groundMaterial = new THREE.MeshStandardMaterial({
-            color: 0xffffff,
-            roughness: 0.5,
-            metalness: 0.1,
-        });
-        const ground = new THREE.Mesh(groundGeometry, groundMaterial);
-        ground.rotation.x = -Math.PI / 2;
-        ground.receiveShadow = true;
-        scene.add(ground);
-
-        // Variabelen
-        let model = null;
-        const loader = new THREE.GLTFLoader();
-        const INITIAL_CAMERA_POSITION = { x: 0, y: 5, z: 20 };
-
-        // OrbitControls
-        const controls = new THREE.OrbitControls(camera, renderer.domElement);
-        controls.enableDamping = true;
-        controls.dampingFactor = 0.25;
-        controls.maxPolarAngle = Math.PI / 2.1;
-
-        // Camera startpositie
-        camera.position.set(INITIAL_CAMERA_POSITION.x, INITIAL_CAMERA_POSITION.y, INITIAL_CAMERA_POSITION.z);
-        camera.lookAt(0, 0, 0);
-
-        // Model laden
-        loader.load(
-            'testcubev2.gltf',
-            function (gltf) {
-                model = gltf.scene;
-
-                const box = new THREE.Box3().setFromObject(model);
-                const size = box.getSize(new THREE.Vector3());
-                model.position.set(0, size.y / 2, 0); // Correcte hoogte boven grond
-
-                model.traverse((node) => {
-                    if (node.isMesh) {
-                        node.castShadow = true;
-                        node.receiveShadow = true;
-                    }
-                });
-
-                scene.add(model);
-                console.log("Model geladen.");
-            },
-            undefined,
-            function (error) {
-                console.error("Fout bij laden model:", error);
-            }
-        );
-
-        // Animatie
-        function animate() {
-            requestAnimationFrame(animate);
-            controls.update();
-            renderer.render(scene, camera);
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3D Object Viewer</title>
+    <link rel="icon" href="data:," />
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            background: radial-gradient(circle, #f8f9fa, #e9ecef);
+            font-family: Arial, sans-serif;
         }
-        animate();
+        canvas {
+            display: block;
+        }
+        #menu-toggle {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            z-index: 20;
+            background-color: #cc0000;
+            color: white;
+            font-size: 16px;
+            font-weight: bold;
+            border: none;
+            border-radius: 8px;
+            padding: 12px 20px;
+            cursor: pointer;
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.2);
+            transition: background-color 0.3s ease, transform 0.2s ease;
+        }
+        #menu-toggle:hover {
+            background-color: #990000;
+            transform: scale(1.05);
+        }
+        #menu {
+            position: fixed;
+            top: 70px;
+            left: 20px;
+            background-color: #ffffff;
+            border: 1px solid #cc0000;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            padding: 15px;
+            display: none;
+            z-index: 10;
+            opacity: 0;
+            transform: translateY(-10px);
+            transition: opacity 0.3s ease, transform 0.3s ease;
+        }
+        #menu.show {
+            display: block;
+            opacity: 1;
+            transform: translateY(0);
+        }
+        #menu button {
+            display: block;
+            width: 100%;
+            margin-bottom: 10px;
+            padding: 10px 20px;
+            font-size: 14px;
+            border-radius: 8px;
+            cursor: pointer;
+            border: none;
+            font-weight: bold;
+            transition: all 0.3s ease;
+            background-color: #cc0000;
+            color: white;
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.2);
+        }
+        #menu button:hover {
+            background-color: #990000;
+        }
+        #copyright {
+            position: fixed;
+            bottom: 10px;
+            right: 10px;
+            z-index: 10;
+            opacity: 0.9;
+        }
+        #copyright img {
+            width: 100px;
+        }
+    </style>
+</head>
+<body>
+    <!-- Menu Toggle -->
+    <button id="menu-toggle">Menu</button>
 
-    } catch (err) {
-        console.error("Fout tijdens initialisatie:", err);
-    }
-</script>
+    <!-- Menu -->
+    <div id="menu">
+        <button id="reset-button">Reset Camera</button>
+        <button id="rotation-button" class="on">Rotation On</button>
+        <button id="screenshot-button">Take Screenshot</button>
+    </div>
+
+    <!-- Copyright Logo -->
+    <div id="copyright">
+        <img src="fev-logo.png" alt="FEV Logo">
+    </div>
+
+    <!-- Scripts voor Three.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
+
+    <script>
+        console.log("Script gestart: Initialisatie...");
+
+        try {
+            const scene = new THREE.Scene();
+            const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+            const renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setClearColor(0xf8f9fa);
+            renderer.shadowMap.enabled = true;
+            renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+            renderer.setPixelRatio(window.devicePixelRatio);
+            document.body.appendChild(renderer.domElement);
+
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
+            scene.add(ambientLight);
+
+            const directionalLight = new THREE.DirectionalLight(0xffffff, 1.5);
+            directionalLight.position.set(10, 15, 10);
+            directionalLight.castShadow = true;
+            directionalLight.shadow.mapSize.width = 2048;
+            directionalLight.shadow.mapSize.height = 2048;
+            directionalLight.shadow.camera.near = 1;
+            directionalLight.shadow.camera.far = 50;
+            directionalLight.shadow.camera.left = -20;
+            directionalLight.shadow.camera.right = 20;
+            directionalLight.shadow.camera.top = 20;
+            directionalLight.shadow.camera.bottom = -20;
+            scene.add(directionalLight);
+
+            const groundGeometry = new THREE.CircleGeometry(100, 128);
+            const groundMaterial = new THREE.MeshStandardMaterial({
+                color: 0xffffff,
+                roughness: 0.5,
+                metalness: 0.1,
+            });
+            const ground = new THREE.Mesh(groundGeometry, groundMaterial);
+            ground.rotation.x = -Math.PI / 2;
+            ground.receiveShadow = true;
+            scene.add(ground);
+
+            let model = null;
+            const loader = new THREE.GLTFLoader();
+            const INITIAL_CAMERA_POSITION = { x: 0, y: 5, z: 20 };
+
+            const controls = new THREE.OrbitControls(camera, renderer.domElement);
+            controls.enableDamping = true;
+            controls.dampingFactor = 0.25;
+            controls.maxPolarAngle = Math.PI / 2.1;
+
+            camera.position.set(INITIAL_CAMERA_POSITION.x, INITIAL_CAMERA_POSITION.y, INITIAL_CAMERA_POSITION.z);
+            camera.lookAt(0, 0, 0);
+
+            loader.load(
+                'testcubev2.gltf',
+                function (gltf) {
+                    model = gltf.scene;
+
+                    const box = new THREE.Box3().setFromObject(model);
+                    const size = box.getSize(new THREE.Vector3());
+                    model.position.set(0, size.y / 2, 0);
+
+                    model.traverse((node) => {
+                        if (node.isMesh) {
+                            node.castShadow = true;
+                            node.receiveShadow = true;
+                        }
+                    });
+
+                    scene.add(model);
+                    console.log("Model geladen.");
+                },
+                undefined,
+                function (error) {
+                    console.error("Fout bij laden model:", error);
+                }
+            );
+
+            document.getElementById('reset-button').addEventListener('click', () => {
+                camera.position.set(INITIAL_CAMERA_POSITION.x, INITIAL_CAMERA_POSITION.y, INITIAL_CAMERA_POSITION.z);
+                controls.target.set(0, 0, 0);
+                controls.update();
+            });
+
+            const rotationButton = document.getElementById('rotation-button');
+            let rotationEnabled = true;
+            rotationButton.addEventListener('click', () => {
+                rotationEnabled = !rotationEnabled;
+                rotationButton.classList.toggle('on', rotationEnabled);
+                rotationButton.classList.toggle('off', !rotationEnabled);
+                rotationButton.innerText = rotationEnabled ? "Rotation On" : "Rotation Off";
+            });
+
+            document.getElementById('screenshot-button').addEventListener('click', () => {
+                const originalSize = { width: renderer.domElement.width, height: renderer.domElement.height };
+                renderer.setSize(1920, 1080);
+                renderer.render(scene, camera);
+                const link = document.createElement('a');
+                link.download = 'FC-FEV-HD.png';
+                link.href = renderer.domElement.toDataURL();
+                link.click();
+                renderer.setSize(originalSize.width, originalSize.height);
+            });
+
+            function animate() {
+                requestAnimationFrame(animate);
+                controls.update();
+                if (model && rotationEnabled) {
+                    model.rotation.y += 0.01;
+                }
+                renderer.render(scene, camera);
+            }
+            animate();
+
+            const menuToggle = document.getElementById('menu-toggle');
+            const menu = document.getElementById('menu');
+            menuToggle.addEventListener('click', () => {
+                menu.classList.toggle('show');
+            });
+        } catch (err) {
+            console.error("Fout tijdens initialisatie:", err);
+        }
+    </script>
+</body>
+</html>
