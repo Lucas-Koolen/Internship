@@ -9,7 +9,7 @@
         body {
             margin: 0;
             overflow: hidden;
-            background: radial-gradient(circle, #1e2022, #343a40);
+            background: radial-gradient(circle, #f8f9fa, #e9ecef);
             font-family: Arial, sans-serif;
         }
         canvas {
@@ -25,18 +25,24 @@
             gap: 10px;
         }
         #ui button, #ui select {
-            padding: 10px 20px;
+            padding: 12px 25px;
             font-size: 16px;
             border-radius: 8px;
             cursor: pointer;
             border: none;
             transition: all 0.3s ease;
             font-weight: bold;
-            background-color: #007bff;
+            background-color: #cc0000;
             color: white;
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.2);
         }
         #ui button:hover, #ui select:hover {
-            background-color: #0056b3;
+            background-color: #990000;
+        }
+        #rotation-button.off {
+            background-color: transparent;
+            color: #cc0000;
+            border: 2px solid #cc0000;
         }
         #info {
             position: fixed;
@@ -46,13 +52,15 @@
             color: white;
             padding: 10px;
             border-radius: 8px;
+            z-index: 10;
         }
     </style>
 </head>
 <body>
-    <!-- UI -->
+    <!-- UI Knoppen -->
     <div id="ui">
         <button id="reset-button">Reset Camera</button>
+        <button id="rotation-button" class="on">Rotation On</button>
         <button id="screenshot-button">Take Screenshot</button>
         <select id="model-selector">
             <option value="testcubev2.gltf">Test Cube</option>
@@ -60,6 +68,8 @@
             <option value="spaceship.gltf">Spaceship</option>
         </select>
     </div>
+
+    <!-- Modelinformatie -->
     <div id="info">Model Type: <span id="model-type">N/A</span></div>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
@@ -71,37 +81,47 @@
         const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
         const renderer = new THREE.WebGLRenderer({ antialias: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setClearColor(0xf8f9fa);
         renderer.shadowMap.enabled = true;
-        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
         document.body.appendChild(renderer.domElement);
 
-        // Licht
-        const ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
+        // Licht toevoegen
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
         scene.add(ambientLight);
 
-        const directionalLight = new THREE.DirectionalLight(0xffffff, 1.2);
+        const directionalLight = new THREE.DirectionalLight(0xffffff, 1.5);
         directionalLight.position.set(10, 15, 10);
         directionalLight.castShadow = true;
         scene.add(directionalLight);
 
-        // Ondergrond zonder textuur
-        const groundMaterial = new THREE.MeshStandardMaterial({ color: 0x888888 });
-        const ground = new THREE.Mesh(new THREE.CircleGeometry(100, 128), groundMaterial);
+        // Ondergrond
+        const groundGeometry = new THREE.CircleGeometry(100, 128);
+        const groundMaterial = new THREE.MeshStandardMaterial({
+            color: 0xffffff,
+            roughness: 0.1,
+            metalness: 0.5,
+        });
+        const ground = new THREE.Mesh(groundGeometry, groundMaterial);
         ground.rotation.x = -Math.PI / 2;
         ground.receiveShadow = true;
         scene.add(ground);
 
         // Variabelen
         let model = null;
+        let rotationEnabled = true;
         let currentModel = "testcubev2.gltf";
         const loader = new THREE.GLTFLoader();
+        const ROTATION_SPEED = (2 * Math.PI) / 40;
+        const INITIAL_CAMERA_POSITION = { x: 0, y: 5, z: 20 };
 
         const controls = new THREE.OrbitControls(camera, renderer.domElement);
         controls.enableDamping = true;
         controls.dampingFactor = 0.25;
+        controls.maxPolarAngle = Math.PI / 2.1;
 
-        camera.position.set(0, 5, 20);
+        camera.position.set(INITIAL_CAMERA_POSITION.x, INITIAL_CAMERA_POSITION.y, INITIAL_CAMERA_POSITION.z);
 
+        // Model laden
         function loadModel(modelPath) {
             if (model) {
                 scene.remove(model);
@@ -109,24 +129,36 @@
             }
             loader.load(
                 modelPath,
-                (gltf) => {
+                function (gltf) {
                     model = gltf.scene;
                     scene.add(model);
                     document.getElementById('model-type').innerText = modelPath;
                 },
                 undefined,
-                (error) => console.error('Error loading model:', error)
+                function (error) {
+                    console.error("Fout bij laden model:", error);
+                }
             );
         }
         loadModel(currentModel);
 
-        // Event Listeners
+        // UI: Reset Camera
         document.getElementById('reset-button').addEventListener('click', () => {
-            camera.position.set(0, 5, 20);
+            camera.position.set(INITIAL_CAMERA_POSITION.x, INITIAL_CAMERA_POSITION.y, INITIAL_CAMERA_POSITION.z);
             controls.target.set(0, 0, 0);
             controls.update();
         });
 
+        // UI: Rotatie in-/uitschakelen
+        document.getElementById('rotation-button').addEventListener('click', () => {
+            rotationEnabled = !rotationEnabled;
+            const button = document.getElementById('rotation-button');
+            button.classList.toggle('on', rotationEnabled);
+            button.classList.toggle('off', !rotationEnabled);
+            button.innerText = rotationEnabled ? "Rotation On" : "Rotation Off";
+        });
+
+        // UI: Screenshot maken
         document.getElementById('screenshot-button').addEventListener('click', () => {
             renderer.render(scene, camera);
             const link = document.createElement('a');
@@ -135,17 +167,20 @@
             link.click();
         });
 
-        document.getElementById('model-selector').addEventListener('change', (e) => {
-            currentModel = e.target.value;
+        // UI: Model selecteren
+        document.getElementById('model-selector').addEventListener('change', (event) => {
+            currentModel = event.target.value;
             loadModel(currentModel);
         });
 
         function animate() {
             requestAnimationFrame(animate);
-            if (model) {
-                model.rotation.y += 0.01;
-            }
             controls.update();
+
+            if (model && rotationEnabled) {
+                model.rotation.y += ROTATION_SPEED / 60;
+            }
+
             renderer.render(scene, camera);
         }
         animate();
