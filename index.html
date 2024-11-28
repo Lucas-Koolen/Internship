@@ -90,8 +90,8 @@
         }
         body.presentation-mode canvas {
             display: block;
-            width: 100vw;
-            height: 100vh;
+            width: 100%;
+            height: 100%;
             position: fixed;
             top: 0;
             left: 0;
@@ -275,14 +275,22 @@
                         console.error('Fullscreen-modus niet mogelijk:', err);
                     });
                 } else {
-                    body.classList.remove('presentation-mode');
-                    if (document.fullscreenElement) {
-                        document.exitFullscreen().catch((err) => {
-                            console.error('Fullscreen-modus afsluiten mislukt:', err);
-                        });
-                    }
+                    exitPresentationMode();
                 }
             });
+
+            document.addEventListener('fullscreenchange', () => {
+                if (!document.fullscreenElement) {
+                    exitPresentationMode();
+                }
+            });
+
+            function exitPresentationMode() {
+                const body = document.body;
+                if (body.classList.contains('presentation-mode')) {
+                    body.classList.remove('presentation-mode');
+                }
+            }
 
             function animate() {
                 requestAnimationFrame(animate);
