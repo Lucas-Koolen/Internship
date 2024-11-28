@@ -52,8 +52,6 @@
         }
         #menu.show {
             display: block;
-            opacity: 1;
-            transform: translateY(0);
         }
         #menu button {
             display: block;
@@ -185,10 +183,73 @@
                 }
             );
 
-            document.getElementById('reset-button').addEventListener('click', () => {
-                camera.position.set(INITIAL_CAMERA_POSITION.x, INITIAL_CAMERA_POSITION.y, INITIAL_CAMERA_POSITION.z);
-                controls.target.set(0, 0, 0);
-                controls.update();
+            function animateCameraReset() {
+                const startPosition = camera.position.clone();
+                const targetPosition = new THREE.Vector3(
+                    INITIAL_CAMERA_POSITION.x,
+                    INITIAL_CAMERA_POSITION.y,
+                    INITIAL_CAMERA_POSITION.z
+                );
+                const startTime = performance.now();
+                const duration = 1000; // 1 seconde
+
+                function animate(time) {
+                    const elapsed = time - startTime;
+                    const progress = Math.min(elapsed / duration, 1);
+                    camera.position.lerpVectors(startPosition, targetPosition, progress);
+                    controls.target.lerpVectors(controls.target, new THREE.Vector3(0, 0, 0), progress);
+                    controls.update();
+
+                    if (progress < 1) {
+                        requestAnimationFrame(animate);
+                    }
+                }
+
+                requestAnimationFrame(animate);
+            }
+
+            document.getElementById('reset-button').addEventListener('click', animateCameraReset);
+
+            const menuToggle = document.getElementById('menu-toggle');
+            const menu = document.getElementById('menu');
+            let menuVisible = false;
+
+            menuToggle.addEventListener('click', () => {
+                menuVisible = !menuVisible;
+
+                if (menuVisible) {
+                    menu.style.display = 'block';
+                    menu.style.opacity = 0;
+                    menu.style.transform = 'translateY(-10px)';
+
+                    let startTime = performance.now();
+                    function fadeInMenu(time) {
+                        const elapsed = time - startTime;
+                        const progress = Math.min(elapsed / 300, 1); // 300ms animatie
+                        menu.style.opacity = progress;
+                        menu.style.transform = `translateY(${(progress - 1) * 10}px)`;
+
+                        if (progress < 1) {
+                            requestAnimationFrame(fadeInMenu);
+                        }
+                    }
+                    requestAnimationFrame(fadeInMenu);
+                } else {
+                    let startTime = performance.now();
+                    function fadeOutMenu(time) {
+                        const elapsed = time - startTime;
+                        const progress = Math.min(elapsed / 300, 1); // 300ms animatie
+                        menu.style.opacity = 1 - progress;
+                        menu.style.transform = `translateY(-${progress * 10}px)`;
+
+                        if (progress < 1) {
+                            requestAnimationFrame(fadeOutMenu);
+                        } else {
+                            menu.style.display = 'none';
+                        }
+                    }
+                    requestAnimationFrame(fadeOutMenu);
+                }
             });
 
             const rotationButton = document.getElementById('rotation-button');
@@ -220,12 +281,6 @@
                 renderer.render(scene, camera);
             }
             animate();
-
-            const menuToggle = document.getElementById('menu-toggle');
-            const menu = document.getElementById('menu');
-            menuToggle.addEventListener('click', () => {
-                menu.classList.toggle('show');
-            });
         } catch (err) {
             console.error("Fout tijdens initialisatie:", err);
         }
