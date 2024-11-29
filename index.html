@@ -55,7 +55,7 @@
             transform: translateY(0);
             pointer-events: auto;
         }
-        #menu button {
+        #menu button, #advanced-menu button {
             display: block;
             width: 100%;
             margin-bottom: 10px;
@@ -70,8 +70,28 @@
             color: white;
             text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.2);
         }
-        #menu button:hover {
+        #menu button:hover, #advanced-menu button:hover {
             background-color: #990000;
+        }
+        #advanced-menu {
+            position: fixed;
+            top: 70px;
+            left: 220px;
+            background-color: #ffffff;
+            border: 1px solid #cc0000;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            padding: 15px;
+            z-index: 10;
+            opacity: 0;
+            transform: translateY(-20px);
+            pointer-events: none;
+            transition: opacity 0.4s ease, transform 0.4s ease;
+        }
+        #advanced-menu.show {
+            opacity: 1;
+            transform: translateY(0);
+            pointer-events: auto;
         }
         #qr-code {
             position: fixed;
@@ -106,7 +126,8 @@
             margin: 0;
         }
         body.presentation-mode #menu,
-        body.presentation-mode #menu-toggle {
+        body.presentation-mode #menu-toggle,
+        body.presentation-mode #advanced-menu {
             display: none;
         }
         body.presentation-mode #copyright {
@@ -129,6 +150,23 @@
         <button id="qr-code-button" class="off">QR Code Off</button>
         <button id="screenshot-button">Take Screenshot</button>
         <button id="presentation-button">Presentation Mode</button>
+        <button id="advanced-button">Advanced Settings</button>
+    </div>
+
+    <!-- Advanced Menu -->
+    <div id="advanced-menu">
+        <button id="fov-slider">Camera FOV Adjust</button>
+        <button id="save-camera-button">Save Camera Position</button>
+        <button id="restore-camera-button">Restore Camera Position</button>
+        <button id="view-toggle">Switch Orthographic/Perspective View</button>
+        <button id="light-intensity-slider">Adjust Light Intensity</button>
+        <button id="light-color-picker">Change Light Color</button>
+        <button id="shadows-toggle">Toggle Shadows</button>
+        <button id="antialiasing-toggle">Toggle Antialiasing</button>
+        <button id="shadow-quality">Shadow Quality</button>
+        <button id="render-quality-slider">Adjust Render Quality</button>
+        <button id="rotation-speed-slider">Adjust Rotation Speed</button>
+        <button id="auto-camera-toggle">Auto Camera Management</button>
     </div>
 
     <!-- QR Code -->
@@ -237,9 +275,14 @@
 
             const menuToggle = document.getElementById('menu-toggle');
             const menu = document.getElementById('menu');
+            const advancedMenu = document.getElementById('advanced-menu');
 
             menuToggle.addEventListener('click', () => {
                 menu.classList.toggle('show');
+            });
+
+            document.getElementById('advanced-button').addEventListener('click', () => {
+                advancedMenu.classList.toggle('show');
             });
 
             const rotationButton = document.getElementById('rotation-button');
