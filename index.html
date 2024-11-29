@@ -187,21 +187,21 @@
             <label for="shadow-quality">Shadow Quality</label>
             <select id="shadow-quality">
                 <option value="low">Low</option>
-                <option value="medium" selected>Medium</option>
-                <option value="high">High</option>
+                <option value="medium">Medium</option>
+                <option value="high" selected>High</option>
             </select>
         </div>
         <div class="slider-container">
             <label for="render-quality-slider">Adjust Render Quality</label>
             <select id="render-quality-slider">
                 <option value="low">Low</option>
-                <option value="medium" selected>Medium</option>
-                <option value="high">High</option>
+                <option value="medium">Medium</option>
+                <option value="high" selected>High</option>
             </select>
         </div>
         <div class="slider-container">
             <label for="rotation-speed-slider">Adjust Rotation Speed</label>
-            <input type="range" id="rotation-speed-slider" min="0" max="1" step="0.01" value="0.5">
+            <input type="range" id="rotation-speed-slider" min="0.0333" max="0.1" step="0.01" value="0.0333">
         </div>
         <button id="auto-camera-toggle">Auto Camera Management</button>
     </div>
@@ -239,8 +239,8 @@
             const directionalLight = new THREE.DirectionalLight(0xffffff, 1.5);
             directionalLight.position.set(10, 15, 10);
             directionalLight.castShadow = true;
-            directionalLight.shadow.mapSize.width = 2048;
-            directionalLight.shadow.mapSize.height = 2048;
+            directionalLight.shadow.mapSize.width = 4096;
+            directionalLight.shadow.mapSize.height = 4096;
             directionalLight.shadow.camera.near = 1;
             directionalLight.shadow.camera.far = 50;
             directionalLight.shadow.camera.left = -20;
@@ -263,7 +263,7 @@
             let model = null;
             const loader = new THREE.GLTFLoader();
             const INITIAL_CAMERA_POSITION = { x: 0, y: 5, z: 20 };
-            let ROTATION_SPEED = 0.5;
+            let ROTATION_SPEED = 0.0333; // Default rotation speed - one rotation per 30 seconds
 
             const controls = new THREE.OrbitControls(camera, renderer.domElement);
             controls.enableDamping = true;
@@ -360,14 +360,14 @@
                 if (camera instanceof THREE.PerspectiveCamera) {
                     const aspect = camera.aspect;
                     camera = new THREE.OrthographicCamera(window.innerWidth / -100, window.innerWidth / 100, window.innerHeight / 100, window.innerHeight / -100, 0.1, 1000);
-                    camera.position.copy(controls.object.position);
+                    camera.position.copy(controls.target.clone().add(new THREE.Vector3(0, 5, 20)));
                     camera.lookAt(0, 0, 0);
                     controls.object = camera;
                     viewStatus.innerText = "(Orthographic)";
                 } else {
                     const aspect = camera.aspect;
                     camera = new THREE.PerspectiveCamera(75, aspect, 0.1, 1000);
-                    camera.position.copy(controls.object.position);
+                    camera.position.copy(controls.target.clone().add(new THREE.Vector3(0, 5, 20)));
                     camera.lookAt(0, 0, 0);
                     controls.object = camera;
                     viewStatus.innerText = "(Perspective)";
@@ -404,12 +404,18 @@
                 switch (shadowQuality.value) {
                     case "low":
                         directionalLight.shadow.mapSize.set(512, 512);
+                        directionalLight.shadow.camera.near = 5;
+                        directionalLight.shadow.camera.far = 25;
                         break;
                     case "medium":
                         directionalLight.shadow.mapSize.set(1024, 1024);
+                        directionalLight.shadow.camera.near = 2;
+                        directionalLight.shadow.camera.far = 35;
                         break;
                     case "high":
-                        directionalLight.shadow.mapSize.set(2048, 2048);
+                        directionalLight.shadow.mapSize.set(4096, 4096);
+                        directionalLight.shadow.camera.near = 1;
+                        directionalLight.shadow.camera.far = 50;
                         break;
                 }
                 directionalLight.shadow.mapSize.needsUpdate = true;
@@ -532,7 +538,7 @@
                 requestAnimationFrame(animate);
                 controls.update();
                 if (model && rotationEnabled) {
-                    model.rotation.y += (ROTATION_SPEED * 10 * Math.PI) / 60;
+                    model.rotation.y += (ROTATION_SPEED * Math.PI) / 30;
                 }
                 // Synchroniseer het licht met de camera
                 directionalLight.position.copy(camera.position);
