@@ -20,7 +20,7 @@
             top: 20px;
             left: 20px;
             z-index: 20;
-            background-color: #5a5c5e;
+            background-color: #cc0000;
             color: white;
             font-size: 16px;
             font-weight: bold;
@@ -40,9 +40,9 @@
             top: 70px;
             left: 20px;
             background-color: #f2f2f2;
-            border: 1px solid #5a5c5e;
+            border: 1px solid #990000;
             border-radius: 8px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.25);
             padding: 20px;
             z-index: 10;
             opacity: 0;
@@ -61,26 +61,29 @@
             margin-bottom: 15px;
             padding: 12px;
             font-size: 15px;
-            border-radius: 8px;
+            border-radius: 12px;
             cursor: pointer;
             border: none;
             font-weight: bold;
             transition: all 0.3s ease;
-            background-color: #5a5c5e;
+            background-color: #cc0000;
             color: white;
             text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.2);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
         }
         #menu button:hover, #advanced-menu button:hover {
-            background-color: #3d3f41;
+            background-color: #990000;
+            transform: scale(1.02);
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3);
         }
         #advanced-menu {
             position: fixed;
             top: 70px;
             left: 300px;
             background-color: #f2f2f2;
-            border: 1px solid #5a5c5e;
+            border: 1px solid #990000;
             border-radius: 8px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.25);
             padding: 20px;
             z-index: 10;
             opacity: 0;
@@ -262,7 +265,7 @@
             let model = null;
             const loader = new THREE.GLTFLoader();
             const INITIAL_CAMERA_POSITION = { x: 0, y: 5, z: 20 };
-            let ROTATION_SPEED = 0.0167; // Default rotation speed for 1 rotation per 60 seconds
+            let ROTATION_SPEED = 0.00835; // Default rotation speed for 1 rotation per 120 seconds // Default rotation speed for 1 rotation per 60 seconds
 
             const controls = new THREE.OrbitControls(camera, renderer.domElement);
             controls.enableDamping = true;
