@@ -137,6 +137,17 @@
             z-index: 10;
             opacity: 1;
         }
+        .slider-container {
+            display: flex;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        .slider-container label {
+            flex: 1;
+        }
+        .slider-container input[type=range] {
+            flex: 2;
+        }
     </style>
 </head>
 <body>
@@ -155,17 +166,43 @@
 
     <!-- Advanced Menu -->
     <div id="advanced-menu">
-        <button id="fov-slider">Camera FOV Adjust</button>
+        <div class="slider-container">
+            <label for="fov-slider">Camera FOV Adjust</label>
+            <input type="range" id="fov-slider" min="30" max="120" value="75">
+        </div>
         <button id="save-camera-button">Save Camera Position</button>
         <button id="restore-camera-button">Restore Camera Position</button>
-        <button id="view-toggle">Switch Orthographic/Perspective View</button>
-        <button id="light-intensity-slider">Adjust Light Intensity</button>
-        <button id="light-color-picker">Change Light Color</button>
-        <button id="shadows-toggle">Toggle Shadows</button>
-        <button id="antialiasing-toggle">Toggle Antialiasing</button>
-        <button id="shadow-quality">Shadow Quality</button>
-        <button id="render-quality-slider">Adjust Render Quality</button>
-        <button id="rotation-speed-slider">Adjust Rotation Speed</button>
+        <button id="view-toggle">Switch Orthographic/Perspective View <span id="view-status">(Perspective)</span></button>
+        <div class="slider-container">
+            <label for="light-intensity-slider">Adjust Light Intensity</label>
+            <input type="range" id="light-intensity-slider" min="0" max="5" step="0.1" value="1.5">
+        </div>
+        <div class="slider-container">
+            <label for="light-color-picker">Change Light Color</label>
+            <input type="color" id="light-color-picker" value="#ffffff">
+        </div>
+        <button id="shadows-toggle">Toggle Shadows <span id="shadows-status">(On)</span></button>
+        <button id="antialiasing-toggle">Toggle Antialiasing <span id="antialiasing-status">(On)</span></button>
+        <div class="slider-container">
+            <label for="shadow-quality">Shadow Quality</label>
+            <select id="shadow-quality">
+                <option value="low">Low</option>
+                <option value="medium" selected>Medium</option>
+                <option value="high">High</option>
+            </select>
+        </div>
+        <div class="slider-container">
+            <label for="render-quality-slider">Adjust Render Quality</label>
+            <select id="render-quality-slider">
+                <option value="low">Low</option>
+                <option value="medium" selected>Medium</option>
+                <option value="high">High</option>
+            </select>
+        </div>
+        <div class="slider-container">
+            <label for="rotation-speed-slider">Adjust Rotation Speed</label>
+            <input type="range" id="rotation-speed-slider" min="0" max="1" step="0.01" value="0.5">
+        </div>
         <button id="auto-camera-toggle">Auto Camera Management</button>
     </div>
 
@@ -226,7 +263,7 @@
             let model = null;
             const loader = new THREE.GLTFLoader();
             const INITIAL_CAMERA_POSITION = { x: 0, y: 5, z: 20 };
-            const ROTATION_SPEED = (2 * Math.PI) / 40;
+            let ROTATION_SPEED = 0.5;
 
             const controls = new THREE.OrbitControls(camera, renderer.domElement);
             controls.enableDamping = true;
@@ -295,12 +332,10 @@
             });
 
             // Advanced settings functionality
-            document.getElementById('fov-slider').addEventListener('click', () => {
-                const newFOV = prompt("Enter new Camera FOV (current: " + camera.fov + ")", camera.fov);
-                if (newFOV !== null) {
-                    camera.fov = parseFloat(newFOV);
-                    camera.updateProjectionMatrix();
-                }
+            const fovSlider = document.getElementById('fov-slider');
+            fovSlider.addEventListener('input', () => {
+                camera.fov = parseFloat(fovSlider.value);
+                camera.updateProjectionMatrix();
             });
 
             let savedCameraPosition = null;
@@ -319,50 +354,54 @@
                 }
             });
 
-            document.getElementById('view-toggle').addEventListener('click', () => {
+            const viewToggle = document.getElementById('view-toggle');
+            const viewStatus = document.getElementById('view-status');
+            viewToggle.addEventListener('click', () => {
                 if (camera instanceof THREE.PerspectiveCamera) {
                     const aspect = camera.aspect;
                     camera = new THREE.OrthographicCamera(window.innerWidth / -100, window.innerWidth / 100, window.innerHeight / 100, window.innerHeight / -100, 0.1, 1000);
                     camera.position.copy(controls.object.position);
                     camera.lookAt(0, 0, 0);
                     controls.object = camera;
+                    viewStatus.innerText = "(Orthographic)";
                 } else {
                     const aspect = camera.aspect;
                     camera = new THREE.PerspectiveCamera(75, aspect, 0.1, 1000);
                     camera.position.copy(controls.object.position);
                     camera.lookAt(0, 0, 0);
                     controls.object = camera;
+                    viewStatus.innerText = "(Perspective)";
                 }
                 camera.updateProjectionMatrix();
             });
 
-            document.getElementById('light-intensity-slider').addEventListener('click', () => {
-                const newIntensity = prompt("Enter new Light Intensity (current: " + directionalLight.intensity + ")", directionalLight.intensity);
-                if (newIntensity !== null) {
-                    directionalLight.intensity = parseFloat(newIntensity);
-                }
+            const lightIntensitySlider = document.getElementById('light-intensity-slider');
+            lightIntensitySlider.addEventListener('input', () => {
+                directionalLight.intensity = parseFloat(lightIntensitySlider.value);
             });
 
-            document.getElementById('light-color-picker').addEventListener('click', () => {
-                const newColor = prompt("Enter new Light Color (current: " + directionalLight.color.getHexString() + ")", "#ffffff");
-                if (newColor) {
-                    directionalLight.color.set(newColor);
-                }
+            const lightColorPicker = document.getElementById('light-color-picker');
+            lightColorPicker.addEventListener('input', () => {
+                directionalLight.color.set(lightColorPicker.value);
             });
 
-            document.getElementById('shadows-toggle').addEventListener('click', () => {
+            const shadowsToggle = document.getElementById('shadows-toggle');
+            const shadowsStatus = document.getElementById('shadows-status');
+            shadowsToggle.addEventListener('click', () => {
                 directionalLight.castShadow = !directionalLight.castShadow;
-                console.log("Shadows are now", directionalLight.castShadow ? "enabled" : "disabled");
+                shadowsStatus.innerText = directionalLight.castShadow ? "(On)" : "(Off)";
             });
 
-            document.getElementById('antialiasing-toggle').addEventListener('click', () => {
+            const antialiasingToggle = document.getElementById('antialiasing-toggle');
+            const antialiasingStatus = document.getElementById('antialiasing-status');
+            antialiasingToggle.addEventListener('click', () => {
                 renderer.antialias = !renderer.antialias;
-                console.log("Antialiasing is now", renderer.antialias ? "enabled" : "disabled");
+                antialiasingStatus.innerText = renderer.antialias ? "(On)" : "(Off)";
             });
 
-            document.getElementById('shadow-quality').addEventListener('click', () => {
-                const quality = prompt("Enter Shadow Quality: low, medium, high (current: " + directionalLight.shadow.mapSize.width + ")", "medium");
-                switch (quality.toLowerCase()) {
+            const shadowQuality = document.getElementById('shadow-quality');
+            shadowQuality.addEventListener('change', () => {
+                switch (shadowQuality.value) {
                     case "low":
                         directionalLight.shadow.mapSize.set(512, 512);
                         break;
@@ -376,18 +415,24 @@
                 directionalLight.shadow.mapSize.needsUpdate = true;
             });
 
-            document.getElementById('render-quality-slider').addEventListener('click', () => {
-                const newQuality = prompt("Enter Render Quality (0.1 to 1.0, current: " + renderer.getPixelRatio() + ")", renderer.getPixelRatio());
-                if (newQuality !== null) {
-                    renderer.setPixelRatio(parseFloat(newQuality));
+            const renderQualitySlider = document.getElementById('render-quality-slider');
+            renderQualitySlider.addEventListener('change', () => {
+                switch (renderQualitySlider.value) {
+                    case "low":
+                        renderer.setPixelRatio(0.5);
+                        break;
+                    case "medium":
+                        renderer.setPixelRatio(1);
+                        break;
+                    case "high":
+                        renderer.setPixelRatio(2);
+                        break;
                 }
             });
 
-            document.getElementById('rotation-speed-slider').addEventListener('click', () => {
-                const newSpeed = prompt("Enter new Rotation Speed (current: " + ROTATION_SPEED + ")", ROTATION_SPEED);
-                if (newSpeed !== null) {
-                    ROTATION_SPEED = parseFloat(newSpeed);
-                }
+            const rotationSpeedSlider = document.getElementById('rotation-speed-slider');
+            rotationSpeedSlider.addEventListener('input', () => {
+                ROTATION_SPEED = parseFloat(rotationSpeedSlider.value);
             });
 
             document.getElementById('auto-camera-toggle').addEventListener('click', () => {
@@ -487,7 +532,7 @@
                 requestAnimationFrame(animate);
                 controls.update();
                 if (model && rotationEnabled) {
-                    model.rotation.y += ROTATION_SPEED / 60;
+                    model.rotation.y += (ROTATION_SPEED * 10 * Math.PI) / 60;
                 }
                 // Synchroniseer het licht met de camera
                 directionalLight.position.copy(camera.position);
