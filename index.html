@@ -294,6 +294,107 @@
                 rotationButton.innerText = rotationEnabled ? "Rotation On" : "Rotation Off";
             });
 
+            // Advanced settings functionality
+            document.getElementById('fov-slider').addEventListener('click', () => {
+                const newFOV = prompt("Enter new Camera FOV (current: " + camera.fov + ")", camera.fov);
+                if (newFOV !== null) {
+                    camera.fov = parseFloat(newFOV);
+                    camera.updateProjectionMatrix();
+                }
+            });
+
+            let savedCameraPosition = null;
+            document.getElementById('save-camera-button').addEventListener('click', () => {
+                savedCameraPosition = camera.position.clone();
+                console.log("Camera position saved:", savedCameraPosition);
+            });
+
+            document.getElementById('restore-camera-button').addEventListener('click', () => {
+                if (savedCameraPosition) {
+                    camera.position.copy(savedCameraPosition);
+                    camera.lookAt(0, 0, 0);
+                    console.log("Camera position restored.");
+                } else {
+                    alert("No camera position saved.");
+                }
+            });
+
+            document.getElementById('view-toggle').addEventListener('click', () => {
+                if (camera instanceof THREE.PerspectiveCamera) {
+                    const aspect = camera.aspect;
+                    camera = new THREE.OrthographicCamera(window.innerWidth / -100, window.innerWidth / 100, window.innerHeight / 100, window.innerHeight / -100, 0.1, 1000);
+                    camera.position.copy(controls.object.position);
+                    camera.lookAt(0, 0, 0);
+                    controls.object = camera;
+                } else {
+                    const aspect = camera.aspect;
+                    camera = new THREE.PerspectiveCamera(75, aspect, 0.1, 1000);
+                    camera.position.copy(controls.object.position);
+                    camera.lookAt(0, 0, 0);
+                    controls.object = camera;
+                }
+                camera.updateProjectionMatrix();
+            });
+
+            document.getElementById('light-intensity-slider').addEventListener('click', () => {
+                const newIntensity = prompt("Enter new Light Intensity (current: " + directionalLight.intensity + ")", directionalLight.intensity);
+                if (newIntensity !== null) {
+                    directionalLight.intensity = parseFloat(newIntensity);
+                }
+            });
+
+            document.getElementById('light-color-picker').addEventListener('click', () => {
+                const newColor = prompt("Enter new Light Color (current: " + directionalLight.color.getHexString() + ")", "#ffffff");
+                if (newColor) {
+                    directionalLight.color.set(newColor);
+                }
+            });
+
+            document.getElementById('shadows-toggle').addEventListener('click', () => {
+                directionalLight.castShadow = !directionalLight.castShadow;
+                console.log("Shadows are now", directionalLight.castShadow ? "enabled" : "disabled");
+            });
+
+            document.getElementById('antialiasing-toggle').addEventListener('click', () => {
+                renderer.antialias = !renderer.antialias;
+                console.log("Antialiasing is now", renderer.antialias ? "enabled" : "disabled");
+            });
+
+            document.getElementById('shadow-quality').addEventListener('click', () => {
+                const quality = prompt("Enter Shadow Quality: low, medium, high (current: " + directionalLight.shadow.mapSize.width + ")", "medium");
+                switch (quality.toLowerCase()) {
+                    case "low":
+                        directionalLight.shadow.mapSize.set(512, 512);
+                        break;
+                    case "medium":
+                        directionalLight.shadow.mapSize.set(1024, 1024);
+                        break;
+                    case "high":
+                        directionalLight.shadow.mapSize.set(2048, 2048);
+                        break;
+                }
+                directionalLight.shadow.mapSize.needsUpdate = true;
+            });
+
+            document.getElementById('render-quality-slider').addEventListener('click', () => {
+                const newQuality = prompt("Enter Render Quality (0.1 to 1.0, current: " + renderer.getPixelRatio() + ")", renderer.getPixelRatio());
+                if (newQuality !== null) {
+                    renderer.setPixelRatio(parseFloat(newQuality));
+                }
+            });
+
+            document.getElementById('rotation-speed-slider').addEventListener('click', () => {
+                const newSpeed = prompt("Enter new Rotation Speed (current: " + ROTATION_SPEED + ")", ROTATION_SPEED);
+                if (newSpeed !== null) {
+                    ROTATION_SPEED = parseFloat(newSpeed);
+                }
+            });
+
+            document.getElementById('auto-camera-toggle').addEventListener('click', () => {
+                // Placeholder functionality for auto camera management toggle
+                alert("Auto Camera Management feature coming soon.");
+            });
+
             // QR Code Logic
             const qrCodeButton = document.getElementById('qr-code-button');
             const qrCode = document.getElementById('qr-code');
